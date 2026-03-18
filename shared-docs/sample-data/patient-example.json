@@ -1,0 +1,10 @@
+{
+  "deidentified_patient_id": "P-001",
+  "gene_variants": [
+    { "gene": "TP53", "variant_classification": "Missense_Mutation" },
+    { "gene": "EGFR", "variant_classification": "L858R" }
+  ],
+  "age": 67,
+  "pathologic_stage": "IIA",
+  "gender": "female"
+}

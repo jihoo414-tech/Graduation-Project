@@ -1,0 +1,171 @@
+openapi: 3.1.0
+info:
+  title: Graduation Project Prototype API
+  version: 1.0.0
+  summary: Single-patient deidentified upload and synchronous inference prototype.
+servers:
+  - url: http://localhost:8000
+paths:
+  /api/v1/inference/upload:
+    post:
+      summary: Upload one patient CSV or JSON file and receive a synchronous result envelope.
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        '200':
+          description: Successful inference result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResultEnvelopeV1'
+        '400':
+          description: Malformed file or multiple patient IDs.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                malformed_file:
+                  value:
+                    error:
+                      code: MALFORMED_FILE
+                      message: Unable to parse uploaded file.
+                      details:
+                        - field: file
+                          rule: valid_csv_or_json
+                multiple_patient_ids:
+                  value:
+                    error:
+                      code: MULTIPLE_PATIENT_IDS
+                      message: Upload must contain exactly one patient ID.
+                      details:
+                        - field: deidentified_patient_id
+                          rule: single_patient_per_upload
+        '415':
+          description: Unsupported file type.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error:
+                  code: UNSUPPORTED_FILE_TYPE
+                  message: Supported file types are CSV and JSON.
+                  details:
+                    - field: file
+                      rule: content_type
+        '422':
+          description: Semantic validation failure.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                missing_patient_id:
+                  value:
+                    error:
+                      code: MISSING_PATIENT_ID
+                      message: deidentified_patient_id is required.
+                      details:
+                        - field: deidentified_patient_id
+                          rule: required
+                missing_required_field:
+                  value:
+                    error:
+                      code: MISSING_REQUIRED_FIELD
+                      message: A required gene variant field is missing.
+                      details:
+                        - field: gene_variants[0].gene
+                          rule: required
+                validation_error:
+                  value:
+                    error:
+                      code: VALIDATION_ERROR
+                      message: Request validation failed.
+                      details:
+                        - field: file
+                          rule: missing
+                disallowed_identifier_field:
+                  value:
+                    error:
+                      code: DISALLOWED_IDENTIFIER_FIELD
+                      message: Direct identifiers are not allowed.
+                      details:
+                        - field: name
+                          rule: forbidden
+  /api/v1/contracts/patient-example:
+    get:
+      summary: Return canonical sample files and envelope example.
+      responses:
+        '200':
+          description: Contract examples.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [csv_example, json_example, envelope_example]
+                properties:
+                  csv_example:
+                    type: string
+                  json_example:
+                    $ref: '#/components/schemas/PatientInput'
+                  envelope_example:
+                    $ref: '#/components/schemas/ResultEnvelopeV1'
+  /api/v1/health:
+    get:
+      summary: Report service health and active adapter name.
+      responses:
+        '200':
+          description: Healthy service state.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [status, adapter]
+                properties:
+                  status:
+                    type: string
+                    const: ok
+                  adapter:
+                    type: string
+components:
+  schemas:
+    PatientInput:
+      $ref: './schemas/patient-input.schema.json'
+    ResultEnvelopeV1:
+      $ref: './schemas/result-envelope-v1.schema.json'
+    ErrorDetail:
+      type: object
+      required: [field, rule]
+      properties:
+        field:
+          type: string
+        rule:
+          type: string
+    ErrorBody:
+      type: object
+      required: [code, message, details]
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        details:
+          type: array
+          items:
+            $ref: '#/components/schemas/ErrorDetail'
+    ErrorResponse:
+      type: object
+      required: [error]
+      properties:
+        error:
+          $ref: '#/components/schemas/ErrorBody'

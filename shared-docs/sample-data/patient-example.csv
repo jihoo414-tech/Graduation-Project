@@ -1,0 +1,3 @@
+deidentified_patient_id,gene,variant_classification,age,pathologic_stage,gender
+P-001,TP53,Missense_Mutation,67,IIA,female
+P-001,EGFR,L858R,67,IIA,female

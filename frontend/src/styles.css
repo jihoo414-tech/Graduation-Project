@@ -1,0 +1,274 @@
+:root {
+  font-family:
+    Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  color: #e5eef9;
+  background: #08111f;
+  line-height: 1.5;
+  font-weight: 400;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at top, rgba(58, 130, 246, 0.18), transparent 45%),
+    linear-gradient(180deg, #08111f 0%, #0f172a 100%);
+}
+
+button,
+input {
+  font: inherit;
+}
+
+code,
+pre {
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+}
+
+#root {
+  width: 100%;
+}
+
+.app-shell {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 32px 20px 56px;
+}
+
+.hero {
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+  align-items: flex-start;
+  margin-bottom: 28px;
+}
+
+.eyebrow {
+  margin: 0 0 8px;
+  color: #93c5fd;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 0.8rem;
+}
+
+.hero h1 {
+  margin: 0;
+  font-size: clamp(2rem, 5vw, 3.5rem);
+}
+
+.hero-copy {
+  margin: 12px 0 0;
+  max-width: 720px;
+  color: #bfdbfe;
+}
+
+.hero-meta {
+  min-width: 230px;
+  border: 1px solid rgba(148, 163, 184, 0.24);
+  background: rgba(15, 23, 42, 0.72);
+  border-radius: 18px;
+  padding: 16px 18px;
+}
+
+.hero-meta span {
+  display: block;
+  color: #94a3b8;
+  font-size: 0.85rem;
+}
+
+.content {
+  display: grid;
+  gap: 20px;
+}
+
+.panel,
+.result-card,
+.helper-card,
+.preview-card {
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  background: rgba(15, 23, 42, 0.84);
+  backdrop-filter: blur(12px);
+  border-radius: 20px;
+}
+
+.panel {
+  padding: 24px;
+}
+
+.section-heading h2,
+.result-card h3,
+.helper-card h3,
+.preview-card h3 {
+  margin-top: 0;
+}
+
+.section-heading p,
+.muted-text {
+  color: #94a3b8;
+}
+
+.upload-form {
+  display: grid;
+  gap: 16px;
+}
+
+.file-picker {
+  display: grid;
+  gap: 12px;
+  padding: 20px;
+  border: 1px dashed rgba(96, 165, 250, 0.5);
+  border-radius: 18px;
+  background: rgba(30, 41, 59, 0.55);
+}
+
+.file-picker input {
+  color: #e5eef9;
+}
+
+.file-meta {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  color: #cbd5e1;
+}
+
+.primary-button {
+  width: fit-content;
+  border: none;
+  border-radius: 999px;
+  padding: 12px 20px;
+  background: linear-gradient(135deg, #2563eb, #7c3aed);
+  color: white;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.primary-button:disabled {
+  opacity: 0.7;
+  cursor: progress;
+}
+
+.helper-grid,
+.result-grid,
+.preview-grid {
+  display: grid;
+  gap: 16px;
+}
+
+.helper-grid,
+.result-grid {
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+}
+
+.preview-grid {
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+}
+
+.helper-card,
+.result-card,
+.preview-card {
+  padding: 20px;
+}
+
+.detail-list,
+.flow-list {
+  margin: 0;
+  padding-left: 18px;
+}
+
+.flow-list li.active {
+  color: #93c5fd;
+  font-weight: 700;
+}
+
+.preview-card pre {
+  overflow: auto;
+  margin: 0;
+  padding: 16px;
+  border-radius: 14px;
+  background: rgba(2, 6, 23, 0.75);
+  color: #dbeafe;
+  font-size: 0.85rem;
+}
+
+.loading-panel {
+  border-color: rgba(96, 165, 250, 0.55);
+}
+
+.error-panel {
+  border-color: rgba(248, 113, 113, 0.55);
+}
+
+.error-code {
+  margin-bottom: 14px;
+  color: #fecaca;
+  font-weight: 700;
+}
+
+.summary-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 14px;
+  margin: 0;
+}
+
+.summary-list div {
+  border-radius: 14px;
+  padding: 14px;
+  background: rgba(2, 6, 23, 0.46);
+}
+
+.summary-list dt {
+  color: #94a3b8;
+  margin-bottom: 6px;
+}
+
+.summary-list dd {
+  margin: 0;
+  font-weight: 600;
+}
+
+.table-wrap {
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+th,
+td {
+  padding: 12px 10px;
+  text-align: left;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.16);
+}
+
+.artifact-placeholder {
+  border-style: dashed;
+}
+
+.artifact-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+}
+
+@media (max-width: 800px) {
+  .hero {
+    flex-direction: column;
+  }
+
+  .hero-meta {
+    width: 100%;
+  }
+}

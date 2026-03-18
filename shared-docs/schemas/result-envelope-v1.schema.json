@@ -1,0 +1,134 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "./schemas/result-envelope-v1.schema.json",
+  "title": "ResultEnvelopeV1",
+  "type": "object",
+  "required": ["result_version", "patient", "normalized_input", "result", "warnings"],
+  "additionalProperties": false,
+  "properties": {
+    "result_version": {
+      "type": "string",
+      "const": "v1"
+    },
+    "patient": {
+      "type": "object",
+      "required": ["deidentified_patient_id"],
+      "additionalProperties": false,
+      "properties": {
+        "deidentified_patient_id": { "type": "string", "minLength": 1 }
+      }
+    },
+    "normalized_input": {
+      "type": "object",
+      "required": ["deidentified_patient_id", "gene_variants", "clinical"],
+      "additionalProperties": false,
+      "properties": {
+        "deidentified_patient_id": { "type": "string", "minLength": 1 },
+        "gene_variants": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": ["gene", "variant_classification"],
+            "additionalProperties": false,
+            "properties": {
+              "gene": { "type": "string", "minLength": 1 },
+              "variant_classification": { "type": "string", "minLength": 1 }
+            }
+          }
+        },
+        "clinical": {
+          "type": "object",
+          "required": ["age", "pathologic_stage", "gender"],
+          "additionalProperties": false,
+          "properties": {
+            "age": {
+              "anyOf": [
+                { "type": "integer", "minimum": 0, "maximum": 130 },
+                { "type": "null" }
+              ]
+            },
+            "pathologic_stage": {
+              "anyOf": [
+                { "type": "string", "minLength": 1 },
+                { "type": "null" }
+              ]
+            },
+            "gender": {
+              "anyOf": [
+                { "type": "string", "minLength": 1 },
+                { "type": "null" }
+              ]
+            }
+          }
+        }
+      }
+    },
+    "result": {
+      "type": "object",
+      "required": ["adapter", "summary", "artifacts"],
+      "additionalProperties": false,
+      "properties": {
+        "adapter": { "type": "string", "minLength": 1 },
+        "summary": {
+          "type": "object",
+          "required": ["risk_level", "risk_score", "text"],
+          "additionalProperties": false,
+          "properties": {
+            "risk_level": { "type": "string", "minLength": 1 },
+            "risk_score": { "type": "number" },
+            "text": { "type": "string", "minLength": 1 }
+          }
+        },
+        "artifacts": {
+          "type": "object",
+          "required": ["survival_curve", "explanations"],
+          "additionalProperties": true,
+          "properties": {
+            "survival_curve": {
+              "anyOf": [
+                { "type": "null" },
+                {
+                  "type": "object",
+                  "required": ["label", "points"],
+                  "additionalProperties": true,
+                  "properties": {
+                    "label": { "type": "string" },
+                    "points": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": ["time", "survival_probability"],
+                        "additionalProperties": false,
+                        "properties": {
+                          "time": { "type": "number" },
+                          "survival_probability": { "type": "number" }
+                        }
+                      }
+                    }
+                  }
+                }
+              ]
+            },
+            "explanations": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["title", "detail"],
+                "additionalProperties": false,
+                "properties": {
+                  "title": { "type": "string" },
+                  "detail": { "type": "string" }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "warnings": {
+      "type": "array",
+      "items": { "type": "string" }
+    }
+  }
+}
