@@ -1,5 +1,7 @@
 # OMX local runtime/state
-.omx/
+.omx/*
+!.omx/specs/
+!.omx/specs/**
 
 # Environments
 .venv/
