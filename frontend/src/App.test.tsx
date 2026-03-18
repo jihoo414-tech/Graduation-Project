@@ -138,4 +138,36 @@ describe('App', () => {
     });
     expect(screen.getByText(/업로드할 csv 또는 json 파일을 먼저 선택/i)).toBeInTheDocument();
   });
+
+  it('renders sample download buttons after loading contract examples', async () => {
+    mockFetch();
+
+    render(<App />);
+
+    expect(await screen.findByRole('button', { name: /csv 예시 다운로드/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /json 예시 다운로드/i })).toBeInTheDocument();
+  });
+
+  it('supports drag and drop selection before upload', async () => {
+    mockFetch();
+
+    render(<App />);
+
+    expect(await screen.findByText(/계약 예시 미리보기/i)).toBeInTheDocument();
+
+    const dropZone = screen
+      .getByText(/또는 이 영역으로 파일을 끌어다 놓으세요/i)
+      .closest('label');
+    const file = new File(['patient'], 'drop-patient.csv', { type: 'text/csv' });
+
+    expect(dropZone).not.toBeNull();
+    fireEvent.drop(dropZone as HTMLLabelElement, {
+      dataTransfer: { files: [file] },
+    });
+
+    expect(screen.getByText(/drop-patient\.csv/i)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /업로드 후 추론 실행/i }));
+
+    expect(await screen.findByText(/추론 결과/i)).toBeInTheDocument();
+  });
 });

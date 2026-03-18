@@ -14,6 +14,16 @@ function App() {
   const [viewState, setViewState] = useState<ViewState>('idle');
   const [result, setResult] = useState<ResultEnvelope | null>(null);
   const [error, setError] = useState<ReturnType<typeof normalizeUnknownError> | null>(null);
+  const [isDragActive, setIsDragActive] = useState(false);
+
+  const assignSelectedFile = (file: File | null) => {
+    setIsDragActive(false);
+    setSelectedFile(file);
+    if (viewState === 'error') {
+      setViewState('idle');
+      setError(null);
+    }
+  };
 
   const selectedFileLabel = useMemo(() => {
     if (!selectedFile) {
@@ -77,19 +87,38 @@ function App() {
           </div>
 
           <form className="upload-form" onSubmit={handleUpload}>
-            <label className="file-picker" htmlFor="patient-file">
+            <label
+              className={`file-picker ${isDragActive ? 'drag-active' : ''}`}
+              htmlFor="patient-file"
+              onDragEnter={(event) => {
+                event.preventDefault();
+                setIsDragActive(true);
+              }}
+              onDragOver={(event) => {
+                event.preventDefault();
+                setIsDragActive(true);
+              }}
+              onDragLeave={(event) => {
+                event.preventDefault();
+                if (event.currentTarget === event.target) {
+                  setIsDragActive(false);
+                }
+              }}
+              onDrop={(event) => {
+                event.preventDefault();
+                setIsDragActive(false);
+                assignSelectedFile(event.dataTransfer.files?.[0] ?? null);
+              }}
+            >
               <span>CSV 또는 JSON 선택</span>
+              <span className="drop-hint">또는 이 영역으로 파일을 끌어다 놓으세요.</span>
               <input
                 id="patient-file"
                 name="patient-file"
                 type="file"
                 accept=".csv,application/json,.json,text/csv"
                 onChange={(event) => {
-                  setSelectedFile(event.target.files?.[0] ?? null);
-                  if (viewState === 'error') {
-                    setViewState('idle');
-                    setError(null);
-                  }
+                  assignSelectedFile(event.target.files?.[0] ?? null);
                 }}
               />
             </label>

@@ -3,6 +3,16 @@ import { fetchContractExamples } from '../lib/api';
 import { acceptedFormats } from '../lib/contracts';
 import type { ContractExamplesResponse } from '../lib/types';
 
+const downloadText = (filename: string, content: string, mimeType: string) => {
+  const blob = new Blob([content], { type: mimeType });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.download = filename;
+  anchor.click();
+  URL.revokeObjectURL(url);
+};
+
 export function ContractPreview() {
   const [examples, setExamples] = useState<ContractExamplesResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -61,15 +71,40 @@ export function ContractPreview() {
       {error ? <p className="muted-text">{error}</p> : null}
       {!examples && !error ? <p className="muted-text">계약 예시를 불러오는 중입니다…</p> : null}
 
-      {previews.length > 0 ? (
-        <div className="preview-grid">
-          {previews.map((preview) => (
-            <article className="preview-card" key={preview.title}>
-              <h3>{preview.title}</h3>
-              <pre>{preview.content}</pre>
-            </article>
-          ))}
-        </div>
+      {examples && previews.length > 0 ? (
+        <>
+          <div className="button-row">
+            <button
+              type="button"
+              className="secondary-button"
+              onClick={() => downloadText('patient-example.csv', examples.csv_example, 'text/csv')}
+            >
+              CSV 예시 다운로드
+            </button>
+            <button
+              type="button"
+              className="secondary-button"
+              onClick={() =>
+                downloadText(
+                  'patient-example.json',
+                  JSON.stringify(examples.json_example, null, 2),
+                  'application/json',
+                )
+              }
+            >
+              JSON 예시 다운로드
+            </button>
+          </div>
+
+          <div className="preview-grid">
+            {previews.map((preview) => (
+              <article className="preview-card" key={preview.title}>
+                <h3>{preview.title}</h3>
+                <pre>{preview.content}</pre>
+              </article>
+            ))}
+          </div>
+        </>
       ) : null}
     </section>
   );
