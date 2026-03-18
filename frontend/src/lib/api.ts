@@ -18,6 +18,21 @@ export class ApiError extends Error {
   }
 }
 
+const localizedMessageByCode: Record<string, string> = {
+  FILE_REQUIRED: '업로드할 CSV 또는 JSON 파일을 먼저 선택해주세요.',
+  REQUEST_FAILED: '요청을 처리하지 못했습니다. 잠시 후 다시 시도해주세요.',
+  UNSUPPORTED_FILE_TYPE: '지원되는 파일 형식은 CSV와 JSON입니다.',
+  MALFORMED_FILE: '업로드한 파일 형식을 해석할 수 없습니다.',
+  MULTIPLE_PATIENT_IDS: '한 번의 업로드에는 환자 1명만 포함할 수 있습니다.',
+  MISSING_PATIENT_ID: '비식별 환자 ID가 필요합니다.',
+  MISSING_GENE_VARIANTS: '유전자 변이 정보가 필요합니다.',
+  MISSING_REQUIRED_FIELD: '필수 유전자 변이 항목이 누락되었습니다.',
+  DISALLOWED_IDENTIFIER_FIELD: '이름, 주민번호, 병원번호 같은 직접 식별정보는 허용되지 않습니다.',
+  VALIDATION_ERROR: '요청 형식이 올바르지 않습니다.',
+};
+
+const localizeMessage = (code: string, fallback: string) => localizedMessageByCode[code] ?? fallback;
+
 const isBackendError = (value: unknown): value is BackendError => {
   if (!value || typeof value !== 'object' || !('error' in value)) {
     return false;
@@ -29,12 +44,15 @@ const isBackendError = (value: unknown): value is BackendError => {
 
 export const normalizeUnknownError = (error: unknown) => {
   if (error instanceof ApiError) {
-    return error.backend;
+    return {
+      ...error.backend,
+      message: localizeMessage(error.backend.code, error.backend.message),
+    };
   }
 
   return {
     code: 'REQUEST_FAILED',
-    message: 'Unable to complete the upload. Please try again.',
+    message: localizeMessage('REQUEST_FAILED', '요청을 처리하지 못했습니다. 잠시 후 다시 시도해주세요.'),
     details: [],
   };
 };
@@ -57,7 +75,7 @@ export const uploadPatientFile = async (file: File): Promise<ResultEnvelope> => 
 
     throw new ApiError(response.status, {
       code: 'REQUEST_FAILED',
-      message: 'Upload failed with an unexpected response.',
+      message: '예상하지 못한 응답으로 업로드에 실패했습니다.',
       details: [],
     });
   }
@@ -76,7 +94,7 @@ export const fetchContractExamples = async (): Promise<ContractExamplesResponse>
 
     throw new ApiError(response.status, {
       code: 'REQUEST_FAILED',
-      message: 'Unable to load contract examples.',
+      message: '계약 예시를 불러오지 못했습니다.',
       details: [],
     });
   }

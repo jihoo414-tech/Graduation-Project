@@ -10,11 +10,11 @@ export function ErrorAlert({ code, message, details = [] }: ErrorAlertProps) {
   return (
     <section className="panel error-panel" role="alert" aria-live="assertive">
       <div className="section-heading">
-        <h2>Upload error</h2>
+        <h2>업로드 오류</h2>
         <p>{message}</p>
       </div>
 
-      <div className="error-code">Code: {code}</div>
+      <div className="error-code">오류 코드: {code}</div>
 
       {details.length > 0 ? (
         <ul className="detail-list">
@@ -26,7 +26,7 @@ export function ErrorAlert({ code, message, details = [] }: ErrorAlertProps) {
           ))}
         </ul>
       ) : (
-        <p className="muted-text">No field-level details were returned by the backend.</p>
+        <p className="muted-text">백엔드가 필드 상세 정보를 반환하지 않았습니다.</p>
       )}
     </section>
   );

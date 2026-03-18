@@ -392,7 +392,7 @@ def _coerce_optional_str(value: Any) -> str | None:
 
 def run_mock_inference(patient: NormalizedPatientInput) -> InferenceSuccessResponse:
     score = round(min(0.95, 0.35 + (0.1 * len(patient.gene_variants))), 2)
-    risk_level = "intermediate" if score < 0.7 else "high"
+    risk_level = "중간 위험" if score < 0.7 else "높은 위험"
 
     return InferenceSuccessResponse(
         result_version="v1",
@@ -403,7 +403,7 @@ def run_mock_inference(patient: NormalizedPatientInput) -> InferenceSuccessRespo
             summary=Summary(
                 risk_level=risk_level,
                 risk_score=score,
-                text="Prototype mock inference result",
+                text="프로토타입용 mock 추론 결과입니다.",
             ),
             artifacts=ResultArtifacts(survival_curve=None, explanations=[]),
         ),

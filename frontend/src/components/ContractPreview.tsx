@@ -18,7 +18,7 @@ export function ContractPreview() {
       })
       .catch(() => {
         if (active) {
-          setError('Contract preview is unavailable until the backend is running.');
+          setError('백엔드가 실행 중일 때 계약 예시를 불러올 수 있습니다.');
         }
       });
 
@@ -33,10 +33,10 @@ export function ContractPreview() {
     }
 
     return [
-      { title: 'CSV example', content: examples.csv_example },
-      { title: 'JSON example', content: JSON.stringify(examples.json_example, null, 2) },
+      { title: 'CSV 예시', content: examples.csv_example },
+      { title: 'JSON 예시', content: JSON.stringify(examples.json_example, null, 2) },
       {
-        title: 'Result envelope preview',
+        title: '결과 응답 예시',
         content: JSON.stringify(examples.envelope_example, null, 2),
       },
     ];
@@ -45,12 +45,12 @@ export function ContractPreview() {
   return (
     <section className="panel">
       <div className="section-heading">
-        <h2>Sample contract preview</h2>
-        <p>Source-of-truth examples are loaded from the backend contract endpoint.</p>
+        <h2>계약 예시 미리보기</h2>
+        <p>원본 예시는 백엔드 계약 엔드포인트에서 직접 불러옵니다.</p>
       </div>
 
       <div className="helper-card contract-helper">
-        <h3>Accepted format helper</h3>
+        <h3>업로드 형식 안내</h3>
         <ul className="detail-list">
           {acceptedFormats.map((entry) => (
             <li key={entry}>{entry}</li>
@@ -59,7 +59,7 @@ export function ContractPreview() {
       </div>
 
       {error ? <p className="muted-text">{error}</p> : null}
-      {!examples && !error ? <p className="muted-text">Loading contract examples…</p> : null}
+      {!examples && !error ? <p className="muted-text">계약 예시를 불러오는 중입니다…</p> : null}
 
       {previews.length > 0 ? (
         <div className="preview-grid">

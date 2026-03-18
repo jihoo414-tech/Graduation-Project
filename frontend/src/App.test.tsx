@@ -16,9 +16,9 @@ const mockResultResponse = {
   result: {
     adapter: 'mock',
     summary: {
-      risk_level: 'intermediate',
+      risk_level: '중간 위험',
       risk_score: 0.62,
-      text: 'Prototype mock inference result',
+      text: '프로토타입용 mock 추론 결과입니다.',
     },
     artifacts: {
       survival_curve: null,
@@ -87,16 +87,16 @@ describe('App', () => {
 
     render(<App />);
 
-    expect(await screen.findByText(/sample contract preview/i)).toBeInTheDocument();
+    expect(await screen.findByText(/계약 예시 미리보기/i)).toBeInTheDocument();
 
-    const fileInput = screen.getByLabelText(/select csv or json/i);
+    const fileInput = screen.getByLabelText(/csv 또는 json 선택/i);
     const file = new File(['patient'], 'patient.csv', { type: 'text/csv' });
     fireEvent.change(fileInput, { target: { files: [file] } });
-    fireEvent.click(screen.getByRole('button', { name: /upload and run inference/i }));
+    fireEvent.click(screen.getByRole('button', { name: /업로드 후 추론 실행/i }));
 
-    expect(await screen.findByText(/inference result/i)).toBeInTheDocument();
+    expect(await screen.findByText(/추론 결과/i)).toBeInTheDocument();
     expect(screen.getByText('P-001')).toBeInTheDocument();
-    expect(screen.getByText('Prototype mock inference result')).toBeInTheDocument();
+    expect(screen.getByText('프로토타입용 mock 추론 결과입니다.')).toBeInTheDocument();
   });
 
   it('renders safe backend error details', async () => {
@@ -113,12 +113,12 @@ describe('App', () => {
 
     render(<App />);
 
-    expect(await screen.findByText(/sample contract preview/i)).toBeInTheDocument();
+    expect(await screen.findByText(/계약 예시 미리보기/i)).toBeInTheDocument();
 
-    const fileInput = screen.getByLabelText(/select csv or json/i);
+    const fileInput = screen.getByLabelText(/csv 또는 json 선택/i);
     const file = new File(['patient'], 'patient.json', { type: 'application/json' });
     fireEvent.change(fileInput, { target: { files: [file] } });
-    fireEvent.click(screen.getByRole('button', { name: /upload and run inference/i }));
+    fireEvent.click(screen.getByRole('button', { name: /업로드 후 추론 실행/i }));
 
     expect(await screen.findByRole('alert')).toBeInTheDocument();
     expect(screen.getByText(/missing_required_field/i)).toBeInTheDocument();
@@ -130,12 +130,12 @@ describe('App', () => {
 
     render(<App />);
 
-    expect(await screen.findByText(/sample contract preview/i)).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: /upload and run inference/i }));
+    expect(await screen.findByText(/계약 예시 미리보기/i)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /업로드 후 추론 실행/i }));
 
     await waitFor(() => {
       expect(screen.getByRole('alert')).toBeInTheDocument();
     });
-    expect(screen.getByText(/choose a csv or json file/i)).toBeInTheDocument();
+    expect(screen.getByText(/업로드할 csv 또는 json 파일을 먼저 선택/i)).toBeInTheDocument();
   });
 });
