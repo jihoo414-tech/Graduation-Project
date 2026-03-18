@@ -1,9 +1,0 @@
-{
-  "session_id": "omx-1773762740419-htlh1l",
-  "started_at": "2026-03-17T15:52:20.639Z",
-  "cwd": "/home/sksms/work/Graduation-Project",
-  "pid": 352823,
-  "platform": "linux",
-  "pid_start_ticks": 2342117,
-  "pid_cmdline": "node /home/sksms/.nvm/versions/node/v24.13.0/bin/omx --xhigh --madmax"
-}

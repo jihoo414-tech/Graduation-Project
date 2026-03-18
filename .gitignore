@@ -1,0 +1,30 @@
+# OMX local runtime/state
+.omx/
+
+# Environments
+.venv/
+venv/
+env/
+ENV/
+
+# Python cache
+__pycache__/
+*.py[cod]
+
+# Node / frontend outputs
+node_modules/
+dist/
+build/
+coverage/
+
+# Local env files
+.env
+.env.*
+!.env.example
+
+# Editor / OS noise
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
