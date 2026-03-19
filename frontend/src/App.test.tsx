@@ -77,9 +77,17 @@ const mockFetch = (options?: {
   });
 };
 
+const goToUploadPage = async () => {
+  fireEvent.click(screen.getAllByRole('button', { name: /제품 화면 보기/i })[0]);
+  expect(await screen.findByRole('heading', { name: /로그인 후 첫 화면/i })).toBeInTheDocument();
+  fireEvent.click(screen.getAllByRole('button', { name: /샘플 케이스 실행/i })[0]);
+  expect(await screen.findByRole('heading', { name: /데이터 입력 \/ 업로드/i })).toBeInTheDocument();
+};
+
 describe('App', () => {
   afterEach(() => {
     vi.restoreAllMocks();
+    window.history.replaceState({}, '', '/');
   });
 
   it('renders backend success results after upload', async () => {
@@ -87,16 +95,20 @@ describe('App', () => {
 
     render(<App />);
 
-    expect(await screen.findByText(/계약 예시 미리보기/i)).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: /암 진단 결과 해석을 더 빠르고 명확하게/i })).toBeInTheDocument();
+    await goToUploadPage();
 
     const fileInput = screen.getByLabelText(/csv 또는 json 선택/i);
     const file = new File(['patient'], 'patient.csv', { type: 'text/csv' });
     fireEvent.change(fileInput, { target: { files: [file] } });
-    fireEvent.click(screen.getByRole('button', { name: /업로드 후 추론 실행/i }));
+    fireEvent.click(screen.getByRole('button', { name: /입력 확인 준비/i }));
 
-    expect(await screen.findByText(/추론 결과/i)).toBeInTheDocument();
-    expect(screen.getByText('P-001')).toBeInTheDocument();
-    expect(screen.getByText('프로토타입용 mock 추론 결과입니다.')).toBeInTheDocument();
+    expect(await screen.findByText(/모델에 넣기 전 입력 검토/i)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /분석 실행/i }));
+
+    expect(await screen.findByRole('heading', { name: /결과 대시보드/i })).toBeInTheDocument();
+    expect(screen.getByText(/P-001/)).toBeInTheDocument();
+    expect(screen.getAllByText(/중간 위험/i).length).toBeGreaterThan(0);
   });
 
   it('renders safe backend error details', async () => {
@@ -112,13 +124,12 @@ describe('App', () => {
     });
 
     render(<App />);
-
-    expect(await screen.findByText(/계약 예시 미리보기/i)).toBeInTheDocument();
+    await goToUploadPage();
 
     const fileInput = screen.getByLabelText(/csv 또는 json 선택/i);
     const file = new File(['patient'], 'patient.json', { type: 'application/json' });
     fireEvent.change(fileInput, { target: { files: [file] } });
-    fireEvent.click(screen.getByRole('button', { name: /업로드 후 추론 실행/i }));
+    fireEvent.click(screen.getByRole('button', { name: /입력 확인 준비/i }));
 
     expect(await screen.findByRole('alert')).toBeInTheDocument();
     expect(screen.getByText(/missing_required_field/i)).toBeInTheDocument();
@@ -129,9 +140,8 @@ describe('App', () => {
     mockFetch();
 
     render(<App />);
-
-    expect(await screen.findByText(/계약 예시 미리보기/i)).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: /업로드 후 추론 실행/i }));
+    await goToUploadPage();
+    fireEvent.click(screen.getByRole('button', { name: /입력 확인 준비/i }));
 
     await waitFor(() => {
       expect(screen.getByRole('alert')).toBeInTheDocument();
@@ -143,21 +153,20 @@ describe('App', () => {
     mockFetch();
 
     render(<App />);
+    await goToUploadPage();
 
-    expect(await screen.findByRole('button', { name: /csv 예시 다운로드/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /csv 예시 다운로드/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /json 예시 다운로드/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /샘플 데이터로 테스트/i })).toBeInTheDocument();
   });
 
   it('supports drag and drop selection before upload', async () => {
     mockFetch();
 
     render(<App />);
+    await goToUploadPage();
 
-    expect(await screen.findByText(/계약 예시 미리보기/i)).toBeInTheDocument();
-
-    const dropZone = screen
-      .getByText(/또는 이 영역으로 파일을 끌어다 놓으세요/i)
-      .closest('label');
+    const dropZone = screen.getByText(/또는 이 영역으로 파일을 끌어다 놓으세요/i).closest('label');
     const file = new File(['patient'], 'drop-patient.csv', { type: 'text/csv' });
 
     expect(dropZone).not.toBeNull();
@@ -166,8 +175,8 @@ describe('App', () => {
     });
 
     expect(screen.getByText(/drop-patient\.csv/i)).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: /업로드 후 추론 실행/i }));
+    fireEvent.click(screen.getByRole('button', { name: /입력 확인 준비/i }));
 
-    expect(await screen.findByText(/추론 결과/i)).toBeInTheDocument();
+    expect(await screen.findByText(/모델에 넣기 전 입력 검토/i)).toBeInTheDocument();
   });
 });
