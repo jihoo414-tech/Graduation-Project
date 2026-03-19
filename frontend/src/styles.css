@@ -923,6 +923,49 @@ strong {
   background: rgba(246, 246, 246, 0.86);
 }
 
+.action-feedback-banner,
+.journey-context-card {
+  margin-bottom: 18px;
+  border-radius: 20px;
+  border: 1px solid rgba(228, 228, 231, 0.95);
+  background: rgba(255, 255, 255, 0.9);
+  padding: 14px 18px;
+  box-shadow: 0 14px 30px rgba(15, 23, 42, 0.06);
+}
+
+.action-feedback-banner {
+  font-weight: 600;
+}
+
+.action-feedback-success {
+  color: #166534;
+  background: rgba(240, 253, 244, 0.95);
+  border-color: rgba(134, 239, 172, 0.8);
+}
+
+.action-feedback-info {
+  color: #1d4ed8;
+  background: rgba(239, 246, 255, 0.95);
+  border-color: rgba(147, 197, 253, 0.8);
+}
+
+.journey-context-card {
+  display: grid;
+  gap: 4px;
+}
+
+.journey-context-card strong {
+  font-size: 1rem;
+}
+
+.journey-context-card span {
+  color: #71717a;
+}
+
+.builder-future-card {
+  align-self: start;
+}
+
 .product-page-header,
 .workspace-page-header {
   display: flex;

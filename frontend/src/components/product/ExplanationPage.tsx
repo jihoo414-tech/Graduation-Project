@@ -1,10 +1,13 @@
 import { useMemo, useState } from 'react';
 import type { MouseEventHandler } from 'react';
+import type { ActionFeedback, JourneyContext } from '../../lib/demoJourney';
 import type { ResultEnvelope } from '../../lib/types';
 import { buildClinicianSummary, buildPatientFriendlySummary } from '../../lib/workspace';
 
 type ExplanationPageProps = {
   result: ResultEnvelope;
+  journeyContext: JourneyContext;
+  actionFeedback: ActionFeedback | null;
   onBackToResult: MouseEventHandler<HTMLButtonElement>;
   onCopy: MouseEventHandler<HTMLButtonElement>;
   onPrint: MouseEventHandler<HTMLButtonElement>;
@@ -13,6 +16,8 @@ type ExplanationPageProps = {
 
 export function ExplanationPage({
   result,
+  journeyContext,
+  actionFeedback,
   onBackToResult,
   onCopy,
   onPrint,
@@ -36,6 +41,17 @@ export function ExplanationPage({
             결과 화면으로 돌아가기
           </button>
         </div>
+
+        <div className="journey-context-card">
+          <strong>{journeyContext.caseId}</strong>
+          <span>{journeyContext.sessionLabel} · {journeyContext.nextStepLabel}</span>
+        </div>
+
+        {actionFeedback ? (
+          <div className={`action-feedback-banner action-feedback-${actionFeedback.tone}`} role="status">
+            {actionFeedback.message}
+          </div>
+        ) : null}
 
         <div className="button-row">
           <button

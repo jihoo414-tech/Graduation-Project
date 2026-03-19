@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import type { MouseEventHandler } from 'react';
+import type { ActionFeedback, JourneyContext } from '../../lib/demoJourney';
 import type { ResultEnvelope } from '../../lib/types';
 import {
   buildClinicianSummary,
@@ -17,6 +18,8 @@ type ResultTab = 'overview' | 'evidence' | 'patient' | 'export';
 
 type ResultWorkspaceProps = {
   result: ResultEnvelope;
+  journeyContext: JourneyContext;
+  actionFeedback: ActionFeedback | null;
   onBackToUpload: MouseEventHandler<HTMLButtonElement>;
   onSavePdf: MouseEventHandler<HTMLButtonElement>;
   onSaveImage: MouseEventHandler<HTMLButtonElement>;
@@ -53,6 +56,8 @@ const buildCurvePath = (points: { time: number; survival_probability: number }[]
 
 export function ResultWorkspace({
   result,
+  journeyContext,
+  actionFeedback,
   onBackToUpload,
   onSavePdf,
   onSaveImage,
@@ -94,6 +99,17 @@ export function ResultWorkspace({
             데이터 입력으로 돌아가기
           </button>
         </div>
+
+        <div className="journey-context-card">
+          <strong>{journeyContext.caseId}</strong>
+          <span>{journeyContext.cancerType} · {journeyContext.stageText} · {journeyContext.analysisMode}</span>
+        </div>
+
+        {actionFeedback ? (
+          <div className={`action-feedback-banner action-feedback-${actionFeedback.tone}`} role="status">
+            {actionFeedback.message}
+          </div>
+        ) : null}
 
         <section className="workspace-top-summary four-col">
           <article className="workspace-summary-card emphasis-card">
@@ -267,7 +283,7 @@ export function ResultWorkspace({
                       요약 복사/저장
                     </button>
                     <button type="button" className="primary-button" onClick={onOpenExplanation}>
-                      환자 설명 화면 열기
+                      환자 설명 생성
                     </button>
                   </div>
                 </article>

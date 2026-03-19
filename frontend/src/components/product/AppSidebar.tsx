@@ -1,4 +1,5 @@
 import type { MouseEventHandler } from 'react';
+import type { JourneyContext } from '../../lib/demoJourney';
 
 type SidebarItem = {
   label: string;
@@ -8,11 +9,20 @@ type SidebarItem = {
 type AppSidebarProps = {
   activePath: string;
   items: SidebarItem[];
+  journeyContext: JourneyContext;
+  clinicianName: string;
   onNavigate: (path: string) => void;
   onLogout: MouseEventHandler<HTMLButtonElement>;
 };
 
-export function AppSidebar({ activePath, items, onNavigate, onLogout }: AppSidebarProps) {
+export function AppSidebar({
+  activePath,
+  items,
+  journeyContext,
+  clinicianName,
+  onNavigate,
+  onLogout,
+}: AppSidebarProps) {
   return (
     <aside className="app-sidebar">
       <div className="app-sidebar-brand">
@@ -25,7 +35,7 @@ export function AppSidebar({ activePath, items, onNavigate, onLogout }: AppSideb
         <div>
           <p className="marketing-kicker">Medical Explain AI</p>
           <h2>Clinical Workspace</h2>
-          <p className="muted-text">Hardcoded operator session · demo workspace</p>
+          <p className="muted-text">{journeyContext.sessionLabel} · {journeyContext.stageLabel}</p>
         </div>
       </div>
 
@@ -46,10 +56,10 @@ export function AppSidebar({ activePath, items, onNavigate, onLogout }: AppSideb
       <div className="app-sidebar-footer">
         <div className="app-sidebar-status-pill">
           <span className="app-sidebar-status-dot" />
-          Demo clinician access
+          Active clinical demo session
         </div>
-        <strong>Demo Doctor</strong>
-        <span>설명 보조용 샌드박스 세션</span>
+        <strong>{clinicianName}</strong>
+        <span>{journeyContext.caseId} · {journeyContext.nextStepLabel}</span>
         <button type="button" className="secondary-button" onClick={onLogout}>
           로그아웃
         </button>

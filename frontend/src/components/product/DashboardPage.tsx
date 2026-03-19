@@ -1,6 +1,5 @@
 import type { MouseEventHandler } from 'react';
-
-type CaseStatus = '입력 중' | '분석 완료' | '검토 필요' | '환자 설명 생성 완료';
+import type { CaseStatus, DemoSession, JourneyContext } from '../../lib/demoJourney';
 
 type CaseItem = {
   id: string;
@@ -11,15 +10,20 @@ type CaseItem = {
 
 type DashboardPageProps = {
   cases: CaseItem[];
+  session: DemoSession;
+  journeyContext: JourneyContext;
   onStartCase: MouseEventHandler<HTMLButtonElement>;
   onRunSampleCase: MouseEventHandler<HTMLButtonElement>;
+  onResumeActiveCase: MouseEventHandler<HTMLButtonElement>;
 };
 
 const statusClassByLabel: Record<CaseStatus, string> = {
-  '입력 중': 'draft',
+  '입력 구성 중': 'draft',
+  '업로드 준비': 'draft',
   '분석 완료': 'done',
-  '검토 필요': 'review',
-  '환자 설명 생성 완료': 'explained',
+  '의사 검토 필요': 'review',
+  '설명 준비 완료': 'explained',
+  '추가 입력 확인 필요': 'review',
 };
 
 const summaryCards = [
@@ -28,7 +32,14 @@ const summaryCards = [
   { label: 'Explanation ready', value: '07', meta: '상담 문장 생성 완료' },
 ];
 
-export function DashboardPage({ cases, onStartCase, onRunSampleCase }: DashboardPageProps) {
+export function DashboardPage({
+  cases,
+  session,
+  journeyContext,
+  onStartCase,
+  onRunSampleCase,
+  onResumeActiveCase,
+}: DashboardPageProps) {
   return (
     <main className="product-shell">
       <div className="product-page-header">
@@ -59,6 +70,11 @@ export function DashboardPage({ cases, onStartCase, onRunSampleCase }: Dashboard
             <p>{card.meta}</p>
           </article>
         ))}
+        <article className="dashboard-summary-tile">
+          <span>Current session</span>
+          <strong>{session.organization}</strong>
+          <p>{session.specialty} · {journeyContext.caseId}</p>
+        </article>
       </section>
 
       <div className="dashboard-grid">
@@ -99,6 +115,15 @@ export function DashboardPage({ cases, onStartCase, onRunSampleCase }: Dashboard
               <li>새 케이스 시작 → 환자/검사 정보 입력 → 분석 실행</li>
               <li>결과 탭에서 요약 / 근거 / 환자 설명 / 리포트를 확인합니다.</li>
             </ul>
+          </article>
+
+          <article className="dashboard-side-card">
+            <p className="marketing-kicker">Continue active case</p>
+            <h3>{journeyContext.caseId}</h3>
+            <p>{journeyContext.stageSummary}</p>
+            <button type="button" className="secondary-button" onClick={onResumeActiveCase}>
+              활성 케이스 이어서 보기
+            </button>
           </article>
 
           <article className="dashboard-side-card">

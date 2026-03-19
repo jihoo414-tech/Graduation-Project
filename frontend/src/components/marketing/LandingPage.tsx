@@ -192,7 +192,7 @@ export function LandingPage({ onRequestDemo, onViewProduct }: LandingPageProps) 
             </div>
             <div className="reference-proof-card">
               <span>Demo</span>
-              <strong>하드코딩된 end-to-end flow 포함</strong>
+              <strong>발표용 end-to-end flow 준비</strong>
             </div>
           </div>
         </div>

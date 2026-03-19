@@ -188,7 +188,7 @@ describe('App', () => {
       dataTransfer: { files: [file] },
     });
 
-    expect(screen.getByText(/drop-patient\.csv/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/drop-patient\.csv/i).length).toBeGreaterThan(0);
     fireEvent.click(screen.getByRole('button', { name: /입력 확인 준비/i }));
 
     expect(await screen.findByText(/모델에 넣기 전 입력 검토/i)).toBeInTheDocument();
@@ -205,6 +205,7 @@ describe('App', () => {
     expect(screen.getByText(/최근 분석한 케이스/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /새 케이스 시작/i })).toBeInTheDocument();
     expect(screen.getByRole('searchbox', { name: /최근 케이스 검색/i })).toBeInTheDocument();
+    expect(screen.queryByText(/hardcoded|하드코딩/i)).not.toBeInTheDocument();
   });
 
   it('opens the explanation view from result workspace and runs a print finisher action', async () => {

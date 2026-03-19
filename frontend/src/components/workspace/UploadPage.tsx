@@ -1,15 +1,27 @@
 import type { ChangeEventHandler, DragEventHandler, FormEventHandler, MouseEventHandler } from 'react';
+import type {
+  ActionFeedback,
+  CaseDraft,
+  DemoSession,
+  JourneyChecklistItem,
+  JourneyContext,
+} from '../../lib/demoJourney';
 import type { ContractExamplesResponse, ResultEnvelope } from '../../lib/types';
 import { buildPatientInputSummary } from '../../lib/workspace';
 
 type UploadPageProps = {
   caseId: string;
+  draft: CaseDraft;
+  journeyContext: JourneyContext;
+  session: DemoSession;
+  checklist: JourneyChecklistItem[];
   viewState: 'idle' | 'loading' | 'success' | 'error';
   selectedFileLabel: string;
   isDragActive: boolean;
   contractExamples: ContractExamplesResponse | null;
   contractExamplesError: string | null;
   result: ResultEnvelope | null;
+  actionFeedback: ActionFeedback | null;
   onSubmit: FormEventHandler<HTMLFormElement>;
   onFileChange: ChangeEventHandler<HTMLInputElement>;
   onDragEnter: DragEventHandler<HTMLLabelElement>;
@@ -33,12 +45,17 @@ const cautionItems = ['직접 식별정보 금지', '의사결정 보조용'];
 
 export function UploadPage({
   caseId,
+  draft,
+  journeyContext,
+  session,
+  checklist,
   viewState,
   selectedFileLabel,
   isDragActive,
   contractExamples,
   contractExamplesError,
   result,
+  actionFeedback,
   onSubmit,
   onFileChange,
   onDragEnter,
@@ -66,9 +83,15 @@ export function UploadPage({
           </div>
           <div className="workspace-page-status">
             <span>현재 단계</span>
-            <strong>{result ? '입력 확인 완료' : '업로드 준비'}</strong>
+            <strong>{journeyContext.statusLabel}</strong>
           </div>
         </div>
+
+        {actionFeedback ? (
+          <div className={`action-feedback-banner action-feedback-${actionFeedback.tone}`} role="status">
+            {actionFeedback.message}
+          </div>
+        ) : null}
 
         <div className="upload-page-grid">
           <section className="upload-primary-panel">
@@ -132,6 +155,29 @@ export function UploadPage({
           </section>
 
           <aside className="upload-side-panel">
+            <article className="workspace-info-card">
+              <h2>현재 데모 컨텍스트</h2>
+              <ul className="detail-list">
+                <li>담당 의료진: {session.clinicianName}</li>
+                <li>기관 / 전공: {journeyContext.sessionLabel}</li>
+                <li>활성 케이스: {draft.caseId} · {draft.cancerType}</li>
+                <li>다음 단계: {journeyContext.nextStepLabel}</li>
+              </ul>
+            </article>
+
+            <article className="workspace-info-card">
+              <h2>분석 전 체크리스트</h2>
+              <ul className="detail-list">
+                {checklist.map((item) => (
+                  <li key={item.label}>
+                    <strong>{item.complete ? '완료' : '대기'}</strong> · {item.label}
+                    <br />
+                    <span className="muted-text">{item.detail}</span>
+                  </li>
+                ))}
+              </ul>
+            </article>
+
             <article className="workspace-info-card">
               <h2>업로드 규칙</h2>
               <ul className="detail-list">

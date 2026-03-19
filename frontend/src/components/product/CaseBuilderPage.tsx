@@ -1,23 +1,12 @@
 import type { ChangeEventHandler, MouseEventHandler } from 'react';
-
-type CaseDraft = {
-  caseId: string;
-  cancerType: string;
-  diagnosisDate: string;
-  stage: string;
-  age: string;
-  gender: string;
-  inputMethod: string;
-  genomicSource: string;
-  biomarkerSummary: string;
-  pathologySummary: string;
-  analysisMode: string;
-  includeExplanation: boolean;
-};
+import type { CaseDraft, JourneyContext, SupportedInputMethod } from '../../lib/demoJourney';
 
 type CaseBuilderPageProps = {
   draft: CaseDraft;
+  journeyContext: JourneyContext;
   activeStep: number;
+  supportedInputMethods: readonly SupportedInputMethod[];
+  futureInputMethods: readonly { label: string; note: string }[];
   onFieldChange: ChangeEventHandler<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>;
   onToggleExplanation: MouseEventHandler<HTMLButtonElement>;
   onSelectStep: (step: number) => void;
@@ -36,7 +25,10 @@ const stepNotes = [
 
 export function CaseBuilderPage({
   draft,
+  journeyContext,
   activeStep,
+  supportedInputMethods,
+  futureInputMethods,
   onFieldChange,
   onToggleExplanation,
   onSelectStep,
@@ -50,6 +42,10 @@ export function CaseBuilderPage({
           <p className="workspace-page-kicker">New Case</p>
           <h1>새 케이스 생성</h1>
           <p>한 번에 긴 폼을 몰아넣지 않고, 단계별로 필요한 정보만 채우는 intake 구조입니다.</p>
+        </div>
+        <div className="workspace-page-status">
+          <span>현재 워크플로우</span>
+          <strong>{journeyContext.nextStepLabel}</strong>
         </div>
       </div>
 
@@ -114,16 +110,27 @@ export function CaseBuilderPage({
               <label>
                 <span>데이터 입력 방식</span>
                 <select name="inputMethod" value={draft.inputMethod} onChange={onFieldChange}>
-                  <option value="CSV 업로드">CSV 업로드</option>
-                  <option value="수동 입력">수동 입력</option>
-                  <option value="유전체 결과 파일 업로드">유전체 결과 파일 업로드</option>
-                  <option value="샘플 데이터로 테스트">샘플 데이터로 테스트</option>
+                  {supportedInputMethods.map((inputMethod) => (
+                    <option key={inputMethod} value={inputMethod}>
+                      {inputMethod}
+                    </option>
+                  ))}
                 </select>
               </label>
               <label>
                 <span>유전체 결과 파일 유형</span>
                 <input name="genomicSource" value={draft.genomicSource} onChange={onFieldChange} />
               </label>
+              <article className="workspace-info-card builder-future-card">
+                <h2>다음 단계에서 확장할 입력 경로</h2>
+                <ul className="detail-list">
+                  {futureInputMethods.map((item) => (
+                    <li key={item.label}>
+                      <strong>{item.label}</strong> — {item.note}
+                    </li>
+                  ))}
+                </ul>
+              </article>
             </div>
           ) : null}
 

@@ -1,14 +1,17 @@
 import type { MouseEventHandler } from 'react';
+import type { ActionFeedback, JourneyContext } from '../../lib/demoJourney';
 import type { ResultEnvelope } from '../../lib/types';
 import { buildClinicianSummary, buildPatientFriendlySummary, buildPatientInputSummary } from '../../lib/workspace';
 
 type ReportPageProps = {
   result: ResultEnvelope;
+  journeyContext: JourneyContext;
+  actionFeedback: ActionFeedback | null;
   onBack: MouseEventHandler<HTMLButtonElement>;
   onPrint: MouseEventHandler<HTMLButtonElement>;
 };
 
-export function ReportPage({ result, onBack, onPrint }: ReportPageProps) {
+export function ReportPage({ result, journeyContext, actionFeedback, onBack, onPrint }: ReportPageProps) {
   const patientSummary = buildPatientInputSummary(result);
   const clinicianSummary = buildClinicianSummary(result);
   const patientText = buildPatientFriendlySummary(result);
@@ -30,6 +33,17 @@ export function ReportPage({ result, onBack, onPrint }: ReportPageProps) {
             </button>
           </div>
         </div>
+
+        <div className="journey-context-card">
+          <strong>{journeyContext.caseId}</strong>
+          <span>{journeyContext.statusLabel} · {journeyContext.stageSummary}</span>
+        </div>
+
+        {actionFeedback ? (
+          <div className={`action-feedback-banner action-feedback-${actionFeedback.tone}`} role="status">
+            {actionFeedback.message}
+          </div>
+        ) : null}
 
         <article className="report-document">
           <section>

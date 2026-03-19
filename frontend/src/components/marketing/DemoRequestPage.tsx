@@ -1,13 +1,22 @@
 import { useState } from 'react';
 import type { MouseEventHandler } from 'react';
+import type { DemoRequestFormValues } from '../../lib/demoJourney';
 
 type DemoRequestPageProps = {
+  defaultValues: DemoRequestFormValues;
   onBack: MouseEventHandler<HTMLButtonElement>;
+  onSubmitRequest: (values: DemoRequestFormValues) => void;
   onContinueToDashboard: MouseEventHandler<HTMLButtonElement>;
 };
 
-export function DemoRequestPage({ onBack, onContinueToDashboard }: DemoRequestPageProps) {
+export function DemoRequestPage({
+  defaultValues,
+  onBack,
+  onSubmitRequest,
+  onContinueToDashboard,
+}: DemoRequestPageProps) {
   const [submitted, setSubmitted] = useState(false);
+  const [formValues, setFormValues] = useState<DemoRequestFormValues>(defaultValues);
 
   return (
     <main className="marketing-shell">
@@ -21,32 +30,69 @@ export function DemoRequestPage({ onBack, onContinueToDashboard }: DemoRequestPa
             className="demo-request-form"
             onSubmit={(event) => {
               event.preventDefault();
+              onSubmitRequest(formValues);
               setSubmitted(true);
             }}
           >
             <label>
               <span>이름</span>
-              <input type="text" defaultValue="김메드" />
+              <input
+                type="text"
+                value={formValues.clinicianName}
+                onChange={(event) =>
+                  setFormValues((current) => ({ ...current, clinicianName: event.target.value }))
+                }
+              />
             </label>
             <label>
               <span>소속 기관</span>
-              <input type="text" defaultValue="Seoul Medical Center" />
+              <input
+                type="text"
+                value={formValues.organization}
+                onChange={(event) =>
+                  setFormValues((current) => ({ ...current, organization: event.target.value }))
+                }
+              />
             </label>
             <label>
               <span>전문 분야</span>
-              <input type="text" defaultValue="종양내과" />
+              <input
+                type="text"
+                value={formValues.specialty}
+                onChange={(event) =>
+                  setFormValues((current) => ({ ...current, specialty: event.target.value }))
+                }
+              />
             </label>
             <label>
               <span>이메일</span>
-              <input type="email" defaultValue="doctor@example.com" />
+              <input
+                type="email"
+                value={formValues.email}
+                onChange={(event) =>
+                  setFormValues((current) => ({ ...current, email: event.target.value }))
+                }
+              />
             </label>
             <label>
               <span>사용 목적</span>
-              <input type="text" defaultValue="암 진단 결과 해석 및 환자 설명 지원" />
+              <input
+                type="text"
+                value={formValues.requestGoal}
+                onChange={(event) =>
+                  setFormValues((current) => ({ ...current, requestGoal: event.target.value }))
+                }
+              />
             </label>
             <label>
               <span>문의 내용</span>
-              <textarea rows={5} defaultValue="재발 위험 해석과 환자 설명 생성 데모를 확인하고 싶습니다." />
+              <textarea
+                rows={5}
+                value={formValues.note}
+                onChange={(event) =>
+                  setFormValues((current) => ({ ...current, note: event.target.value }))
+                }
+              />
             </label>
 
             <div className="button-row">
@@ -61,8 +107,8 @@ export function DemoRequestPage({ onBack, onContinueToDashboard }: DemoRequestPa
 
           {submitted ? (
             <div className="inline-success-card">
-              <strong>데모 요청이 접수되었다고 가정합니다.</strong>
-              <p>지금은 하드코딩 흐름이므로 바로 로그인 후 대시보드로 이동할 수 있습니다.</p>
+              <strong>{formValues.organization} 데모 세션 정보를 저장했습니다.</strong>
+              <p>같은 세션 컨텍스트를 유지한 채 대시보드로 이동해 제품 흐름을 바로 이어서 볼 수 있습니다.</p>
               <button type="button" className="primary-button" onClick={onContinueToDashboard}>
                 데모 계정으로 계속
               </button>

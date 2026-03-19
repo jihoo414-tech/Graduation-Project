@@ -69,6 +69,11 @@ export type JourneyChecklistItem = {
   complete: boolean;
 };
 
+export type ActionFeedback = {
+  tone: 'success' | 'info';
+  message: string;
+};
+
 export type JourneyContext = {
   caseId: string;
   cancerType: string;

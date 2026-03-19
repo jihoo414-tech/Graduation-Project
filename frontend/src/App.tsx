@@ -16,80 +16,31 @@ import {
   normalizeUnknownError,
   uploadPatientFile,
 } from './lib/api';
+import {
+  ANALYSIS_STEP_INTERVAL_MS,
+  analysisSteps,
+  buildCasePaths,
+  buildJourneyContext,
+  buildUploadChecklist,
+  defaultCaseDraft,
+  defaultDemoSession,
+  deriveCaseStatus,
+  futureInputMethodCards,
+  initialRecentCases,
+  normalizePathname,
+  supportedInputMethods,
+  upsertRecentCase,
+  type CaseDraft,
+  type DemoRequestFormValues,
+  type ViewState,
+} from './lib/demoJourney';
 import type { ContractExamplesResponse, ResultEnvelope } from './lib/types';
 import { buildClinicianSummary, buildPatientFriendlySummary } from './lib/workspace';
 
-type ViewState = 'idle' | 'loading' | 'success' | 'error';
-
-type CaseDraft = {
-  caseId: string;
-  cancerType: string;
-  diagnosisDate: string;
-  stage: string;
-  age: string;
-  gender: string;
-  inputMethod: string;
-  genomicSource: string;
-  biomarkerSummary: string;
-  pathologySummary: string;
-  analysisMode: string;
-  includeExplanation: boolean;
+type ActionFeedback = {
+  tone: 'success' | 'info';
+  message: string;
 };
-
-type RecentCase = {
-  id: string;
-  cancerType: string;
-  updatedAt: string;
-  status: '입력 중' | '분석 완료' | '검토 필요' | '환자 설명 생성 완료';
-};
-
-const DEFAULT_CASE_ID = 'LUAD-2026-001';
-const ANALYSIS_STEP_INTERVAL_MS = 160;
-const analysisSteps = [
-  '데이터 검증 중',
-  '필수 변수 확인 중',
-  '예측 모델 실행 중',
-  '해석 문장 생성 중',
-  '리포트 구성 중',
-];
-
-const defaultCaseDraft: CaseDraft = {
-  caseId: DEFAULT_CASE_ID,
-  cancerType: 'LUAD',
-  diagnosisDate: '2026-03-01',
-  stage: 'IIA',
-  age: '67',
-  gender: 'female',
-  inputMethod: 'CSV 업로드',
-  genomicSource: 'Targeted panel result',
-  biomarkerSummary: 'TP53 mutation, EGFR status pending',
-  pathologySummary: 'Residual tumor with moderate differentiation',
-  analysisMode: '재발 위험 예측',
-  includeExplanation: true,
-};
-
-const initialRecentCases: RecentCase[] = [
-  {
-    id: 'LUAD-2026-0008',
-    cancerType: 'LUAD',
-    updatedAt: '오늘 14:10',
-    status: '분석 완료',
-  },
-  {
-    id: 'LUAD-2026-0007',
-    cancerType: 'LUAD',
-    updatedAt: '오늘 11:20',
-    status: '검토 필요',
-  },
-  {
-    id: 'LUAD-2026-0006',
-    cancerType: 'LUAD',
-    updatedAt: '어제 17:40',
-    status: '환자 설명 생성 완료',
-  },
-];
-
-const normalizePathname = (pathname: string) => (pathname.trim() === '' ? '/' : pathname);
 
 const downloadText = (filename: string, content: string, mimeType: string) => {
   const blob = new Blob([content], { type: mimeType });
@@ -108,7 +59,7 @@ const saveWorkspaceSnapshotAsImage = (result: ResultEnvelope) => {
   const context = canvas.getContext('2d');
 
   if (!context) {
-    return;
+    return false;
   }
 
   context.fillStyle = '#ffffff';
@@ -135,10 +86,13 @@ const saveWorkspaceSnapshotAsImage = (result: ResultEnvelope) => {
   link.href = canvas.toDataURL('image/png');
   link.download = `${result.patient.deidentified_patient_id}-result-dashboard.png`;
   link.click();
+
+  return true;
 };
 
 function App() {
   const [pathname, setPathname] = useState(() => normalizePathname(window.location.pathname));
+  const [session, setSession] = useState(defaultDemoSession);
   const [caseDraft, setCaseDraft] = useState<CaseDraft>(defaultCaseDraft);
   const [caseBuilderStep, setCaseBuilderStep] = useState(0);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -148,19 +102,26 @@ function App() {
   const [isDragActive, setIsDragActive] = useState(false);
   const [contractExamples, setContractExamples] = useState<ContractExamplesResponse | null>(null);
   const [contractExamplesError, setContractExamplesError] = useState<string | null>(null);
-  const [recentCases, setRecentCases] = useState<RecentCase[]>(initialRecentCases);
+  const [recentCases, setRecentCases] = useState(initialRecentCases);
   const [analysisStepIndex, setAnalysisStepIndex] = useState(0);
+  const [actionFeedback, setActionFeedback] = useState<ActionFeedback | null>(null);
 
-  const activeCaseId = caseDraft.caseId.trim() || DEFAULT_CASE_ID;
-  const casePaths = useMemo(
-    () => ({
-      upload: `/cases/${activeCaseId}/upload`,
-      analyzing: `/cases/${activeCaseId}/analyzing`,
-      result: `/cases/${activeCaseId}/result`,
-      explanation: `/cases/${activeCaseId}/explanation`,
-      report: `/cases/${activeCaseId}/report`,
-    }),
-    [activeCaseId],
+  const activeCaseId = caseDraft.caseId.trim() || defaultCaseDraft.caseId;
+  const casePaths = useMemo(() => buildCasePaths(activeCaseId), [activeCaseId]);
+  const journeyContext = useMemo(
+    () =>
+      buildJourneyContext({
+        draft: caseDraft,
+        session,
+        pathname,
+        casePaths,
+        result,
+      }),
+    [caseDraft, session, pathname, casePaths, result],
+  );
+  const uploadChecklist = useMemo(
+    () => buildUploadChecklist({ draft: caseDraft, selectedFile, result }),
+    [caseDraft, selectedFile, result],
   );
 
   const navigate = (nextPath: string, options?: { replace?: boolean }) => {
@@ -175,6 +136,10 @@ function App() {
     setPathname(normalizedPath);
   };
 
+  const notifyAction = (message: string, tone: ActionFeedback['tone'] = 'success') => {
+    setActionFeedback({ tone, message });
+  };
+
   useEffect(() => {
     const handlePopState = () => {
       setPathname(normalizePathname(window.location.pathname));
@@ -185,6 +150,20 @@ function App() {
       window.removeEventListener('popstate', handlePopState);
     };
   }, []);
+
+  useEffect(() => {
+    if (!actionFeedback) {
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      setActionFeedback(null);
+    }, 3200);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [actionFeedback]);
 
   useEffect(() => {
     let active = true;
@@ -226,16 +205,15 @@ function App() {
 
     const timeoutId = window.setTimeout(() => {
       navigate(casePaths.result, { replace: true });
-      setRecentCases((currentCases) => {
-        const nextCase: RecentCase = {
+      setRecentCases((currentCases) =>
+        upsertRecentCase(currentCases, {
           id: activeCaseId,
           cancerType: caseDraft.cancerType,
           updatedAt: '방금',
-          status: '분석 완료',
-        };
-
-        return [nextCase, ...currentCases.filter((caseItem) => caseItem.id !== activeCaseId)].slice(0, 5);
-      });
+          status: deriveCaseStatus('result', result),
+        }),
+      );
+      notifyAction('분석이 완료되어 결과 대시보드가 최신 상태로 업데이트되었습니다.');
     }, analysisSteps.length * ANALYSIS_STEP_INTERVAL_MS + 150);
 
     return () => {
@@ -261,12 +239,14 @@ function App() {
     setError(null);
     setIsDragActive(false);
     setAnalysisStepIndex(0);
+    setActionFeedback(null);
   };
 
   const resetToLanding = () => {
     resetCaseFlow();
     setCaseBuilderStep(0);
     setCaseDraft(defaultCaseDraft);
+    setSession(defaultDemoSession);
     navigate('/');
   };
 
@@ -295,11 +275,13 @@ function App() {
     setViewState('loading');
     setError(null);
     setResult(null);
+    setActionFeedback(null);
 
     try {
       const response = await uploadPatientFile(selectedFile);
       setResult(response);
       setViewState('success');
+      notifyAction('입력 검토 패널이 준비되었습니다. 내용을 확인한 뒤 분석을 실행하세요.');
     } catch (unknownError) {
       setError(normalizeUnknownError(unknownError));
       setViewState('error');
@@ -310,7 +292,24 @@ function App() {
     event: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>,
   ) => {
     const { name, value } = event.target;
-    setCaseDraft((currentDraft) => ({ ...currentDraft, [name]: value }));
+
+    setCaseDraft((currentDraft) => ({
+      ...currentDraft,
+      [name]: name === 'inputMethod' ? value : value,
+    } as CaseDraft));
+  };
+
+  const handleDemoRequestSubmit = (formValues: DemoRequestFormValues) => {
+    setSession({
+      clinicianName: formValues.clinicianName,
+      organization: formValues.organization,
+      specialty: formValues.specialty,
+      email: formValues.email,
+      requestGoal: formValues.requestGoal,
+      note: formValues.note,
+      entryPoint: 'demo-request',
+    });
+    notifyAction(`${formValues.organization} 세션으로 데모 진입 정보를 저장했습니다.`);
   };
 
   const sidebarItems = [
@@ -320,6 +319,25 @@ function App() {
     { label: 'Reports', path: result ? casePaths.report : '/dashboard' },
     { label: 'Settings', path: '/settings' },
   ];
+
+  const activeSidebarPath =
+    pathname === '/cases/new'
+      ? '/cases/new'
+      : pathname === '/dashboard'
+        ? '/dashboard'
+        : pathname === '/settings'
+          ? '/settings'
+          : pathname === casePaths.report
+            ? casePaths.report
+            : pathname === casePaths.result || pathname === casePaths.explanation
+              ? casePaths.result
+              : casePaths.upload;
+
+  const resumeActiveCasePath = result
+    ? casePaths.result
+    : pathname === '/cases/new' || viewState === 'idle'
+      ? '/cases/new'
+      : casePaths.upload;
 
   const renderSettingsPage = () => (
     <main className="product-shell">
@@ -340,13 +358,20 @@ function App() {
       return (
         <DashboardPage
           cases={recentCases}
+          session={session}
+          journeyContext={journeyContext}
           onStartCase={() => {
             setCaseBuilderStep(0);
+            setCaseDraft((currentDraft) => ({ ...currentDraft, inputMethod: 'CSV/JSON 업로드' }));
             navigate('/cases/new');
           }}
           onRunSampleCase={() => {
             resetCaseFlow();
+            setCaseDraft((currentDraft) => ({ ...currentDraft, inputMethod: '샘플 데이터로 테스트' }));
             navigate(casePaths.upload);
+          }}
+          onResumeActiveCase={() => {
+            navigate(resumeActiveCasePath);
           }}
         />
       );
@@ -356,7 +381,10 @@ function App() {
       return (
         <CaseBuilderPage
           draft={caseDraft}
+          journeyContext={journeyContext}
           activeStep={caseBuilderStep}
+          supportedInputMethods={supportedInputMethods}
+          futureInputMethods={futureInputMethodCards}
           onFieldChange={handleCaseDraftFieldChange}
           onToggleExplanation={() => {
             setCaseDraft((currentDraft) => ({
@@ -366,6 +394,14 @@ function App() {
           }}
           onSelectStep={setCaseBuilderStep}
           onSaveAndExit={() => {
+            setRecentCases((currentCases) =>
+              upsertRecentCase(currentCases, {
+                id: activeCaseId,
+                cancerType: caseDraft.cancerType,
+                updatedAt: '방금',
+                status: '입력 구성 중',
+              }),
+            );
             navigate('/dashboard');
           }}
           onContinueToUpload={() => {
@@ -375,6 +411,14 @@ function App() {
             }
 
             resetCaseFlow();
+            setRecentCases((currentCases) =>
+              upsertRecentCase(currentCases, {
+                id: activeCaseId,
+                cancerType: caseDraft.cancerType,
+                updatedAt: '방금',
+                status: '업로드 준비',
+              }),
+            );
             navigate(casePaths.upload);
           }}
         />
@@ -385,12 +429,17 @@ function App() {
       return (
         <UploadPage
           caseId={activeCaseId}
+          draft={caseDraft}
+          journeyContext={journeyContext}
+          session={session}
+          checklist={uploadChecklist}
           viewState={viewState}
           selectedFileLabel={selectedFileLabel}
           isDragActive={isDragActive}
           contractExamples={contractExamples}
           contractExamplesError={contractExamplesError}
           result={result}
+          actionFeedback={actionFeedback}
           onSubmit={handleUpload}
           onFileChange={(event) => {
             assignSelectedFile(event.target.files?.[0] ?? null);
@@ -420,6 +469,7 @@ function App() {
             }
 
             downloadText('patient-example.csv', contractExamples.csv_example, 'text/csv');
+            notifyAction('CSV 예시 파일을 내려받았습니다.');
           }}
           onDownloadJson={() => {
             if (!contractExamples) {
@@ -431,6 +481,7 @@ function App() {
               JSON.stringify(contractExamples.json_example, null, 2),
               'application/json',
             );
+            notifyAction('JSON 예시 파일을 내려받았습니다.');
           }}
           onUseSampleData={() => {
             if (!contractExamples) {
@@ -439,6 +490,7 @@ function App() {
 
             const sampleContent = JSON.stringify(contractExamples.json_example, null, 2);
             assignSelectedFile(new File([sampleContent], 'sample-patient.json', { type: 'application/json' }));
+            notifyAction('샘플 환자 데이터를 업로드 준비 상태로 불러왔습니다.');
           }}
           onResetInput={() => {
             resetCaseFlow();
@@ -460,14 +512,22 @@ function App() {
       return (
         <ResultWorkspace
           result={result}
+          journeyContext={journeyContext}
+          actionFeedback={actionFeedback}
           onBackToUpload={() => {
             navigate(casePaths.upload);
           }}
           onSavePdf={() => {
             window.print();
+            notifyAction('인쇄 대화상자를 열어 결과 요약을 저장할 준비를 마쳤습니다.');
           }}
           onSaveImage={() => {
-            saveWorkspaceSnapshotAsImage(result);
+            if (saveWorkspaceSnapshotAsImage(result)) {
+              notifyAction('결과 대시보드 스냅샷을 이미지로 저장했습니다.');
+              return;
+            }
+
+            notifyAction('이미지 저장을 지원하지 않는 환경입니다.', 'info');
           }}
           onDownloadJson={() => {
             downloadText(
@@ -475,6 +535,7 @@ function App() {
               JSON.stringify(result, null, 2),
               'application/json',
             );
+            notifyAction('결과 JSON을 내려받았습니다.');
           }}
           onDownloadClinicianSummary={() => {
             downloadText(
@@ -482,6 +543,7 @@ function App() {
               buildClinicianSummary(result),
               'text/plain;charset=utf-8',
             );
+            notifyAction('의료진 요약 메모를 저장했습니다.');
           }}
           onOpenExplanation={() => {
             navigate(casePaths.explanation);
@@ -497,14 +559,24 @@ function App() {
       return (
         <ExplanationPage
           result={result}
+          journeyContext={journeyContext}
+          actionFeedback={actionFeedback}
           onBackToResult={() => {
             navigate(casePaths.result);
           }}
           onCopy={() => {
-            void navigator.clipboard?.writeText(buildPatientFriendlySummary(result));
+            void navigator.clipboard
+              ?.writeText(buildPatientFriendlySummary(result))
+              .then(() => {
+                notifyAction('환자 설명 문장을 클립보드에 복사했습니다.');
+              })
+              .catch(() => {
+                notifyAction('클립보드 권한을 확인해주세요. 상담 메모 저장은 계속 사용할 수 있습니다.', 'info');
+              });
           }}
           onPrint={() => {
             window.print();
+            notifyAction('상담용 요약을 인쇄할 준비를 마쳤습니다.');
           }}
           onAddNote={() => {
             downloadText(
@@ -512,6 +584,7 @@ function App() {
               buildPatientFriendlySummary(result),
               'text/plain;charset=utf-8',
             );
+            notifyAction('상담 메모 파일을 저장했습니다.');
           }}
         />
       );
@@ -521,11 +594,14 @@ function App() {
       return (
         <ReportPage
           result={result}
+          journeyContext={journeyContext}
+          actionFeedback={actionFeedback}
           onBack={() => {
             navigate(casePaths.result);
           }}
           onPrint={() => {
             window.print();
+            notifyAction('리포트 인쇄 대화상자를 열었습니다.');
           }}
         />
       );
@@ -542,6 +618,7 @@ function App() {
             navigate('/demo-request');
           }}
           onViewProduct={() => {
+            setSession((currentSession) => ({ ...currentSession, entryPoint: 'landing' }));
             navigate('/dashboard');
           }}
         />
@@ -549,9 +626,11 @@ function App() {
 
       {pathname === '/demo-request' ? (
         <DemoRequestPage
+          defaultValues={session}
           onBack={() => {
             navigate('/');
           }}
+          onSubmitRequest={handleDemoRequestSubmit}
           onContinueToDashboard={() => {
             navigate('/dashboard');
           }}
@@ -561,20 +640,10 @@ function App() {
       {pathname !== '/' && pathname !== '/demo-request' ? (
         <div className="authenticated-layout">
           <AppSidebar
-            activePath={
-              pathname === '/cases/new'
-                ? '/cases/new'
-                : pathname === '/dashboard'
-                  ? '/dashboard'
-                  : pathname === '/settings'
-                    ? '/settings'
-                    : pathname === casePaths.report
-                      ? casePaths.report
-                      : result
-                        ? casePaths.result
-                        : casePaths.upload
-            }
+            activePath={activeSidebarPath}
             items={sidebarItems}
+            journeyContext={journeyContext}
+            clinicianName={session.clinicianName}
             onNavigate={(nextPath) => {
               navigate(nextPath);
             }}
