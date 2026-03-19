@@ -84,6 +84,30 @@ const goToUploadPage = async () => {
   expect(await screen.findByRole('heading', { name: /데이터 입력 \/ 업로드/i })).toBeInTheDocument();
 };
 
+const goToDashboardFromDemoRequest = async () => {
+  fireEvent.click(screen.getAllByRole('button', { name: /데모 요청/i })[0]);
+  expect(await screen.findByRole('heading', { name: /데모 요청/i })).toBeInTheDocument();
+
+  fireEvent.click(screen.getByRole('button', { name: /데모 요청 보내기/i }));
+  expect(await screen.findByRole('button', { name: /데모 계정으로 계속/i })).toBeInTheDocument();
+
+  fireEvent.click(screen.getByRole('button', { name: /데모 계정으로 계속/i }));
+  expect(await screen.findByRole('heading', { name: /대시보드/i })).toBeInTheDocument();
+};
+
+const uploadPatientFileAndReachResult = async (file = new File(['patient'], 'patient.csv', { type: 'text/csv' })) => {
+  await goToUploadPage();
+
+  const fileInput = screen.getByLabelText(/csv 또는 json 선택/i);
+  fireEvent.change(fileInput, { target: { files: [file] } });
+  fireEvent.click(screen.getByRole('button', { name: /입력 확인 준비/i }));
+
+  expect(await screen.findByText(/모델에 넣기 전 입력 검토/i)).toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: /분석 실행/i }));
+
+  expect(await screen.findByRole('heading', { name: /결과 대시보드/i })).toBeInTheDocument();
+};
+
 describe('App', () => {
   afterEach(() => {
     vi.restoreAllMocks();
@@ -96,17 +120,7 @@ describe('App', () => {
     render(<App />);
 
     expect(await screen.findByRole('heading', { name: /암 진단 결과 해석을 더 빠르고 명확하게/i })).toBeInTheDocument();
-    await goToUploadPage();
-
-    const fileInput = screen.getByLabelText(/csv 또는 json 선택/i);
-    const file = new File(['patient'], 'patient.csv', { type: 'text/csv' });
-    fireEvent.change(fileInput, { target: { files: [file] } });
-    fireEvent.click(screen.getByRole('button', { name: /입력 확인 준비/i }));
-
-    expect(await screen.findByText(/모델에 넣기 전 입력 검토/i)).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: /분석 실행/i }));
-
-    expect(await screen.findByRole('heading', { name: /결과 대시보드/i })).toBeInTheDocument();
+    await uploadPatientFileAndReachResult();
     expect(screen.getByText(/P-001/)).toBeInTheDocument();
     expect(screen.getAllByText(/중간 위험/i).length).toBeGreaterThan(0);
   });
@@ -178,5 +192,49 @@ describe('App', () => {
     fireEvent.click(screen.getByRole('button', { name: /입력 확인 준비/i }));
 
     expect(await screen.findByText(/모델에 넣기 전 입력 검토/i)).toBeInTheDocument();
+  });
+
+  it('continues from the demo request form into the dashboard workspace', async () => {
+    mockFetch();
+
+    render(<App />);
+
+    expect(await screen.findByRole('heading', { name: /암 진단 결과 해석을 더 빠르고 명확하게/i })).toBeInTheDocument();
+    await goToDashboardFromDemoRequest();
+
+    expect(screen.getByText(/최근 분석한 케이스/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /새 케이스 시작/i })).toBeInTheDocument();
+    expect(screen.getByRole('searchbox', { name: /최근 케이스 검색/i })).toBeInTheDocument();
+  });
+
+  it('opens the explanation view from result workspace and runs a print finisher action', async () => {
+    mockFetch();
+    const printSpy = vi.spyOn(window, 'print').mockImplementation(() => undefined);
+
+    render(<App />);
+
+    await uploadPatientFileAndReachResult();
+
+    fireEvent.click(screen.getByRole('button', { name: /환자 설명 생성/i }));
+    expect(await screen.findByRole('heading', { name: /환자 설명용 화면/i })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /인쇄용 요약 생성/i }));
+    expect(printSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it('opens the report view from the export tab and runs a print finisher action', async () => {
+    mockFetch();
+    const printSpy = vi.spyOn(window, 'print').mockImplementation(() => undefined);
+
+    render(<App />);
+
+    await uploadPatientFileAndReachResult();
+
+    fireEvent.click(screen.getByRole('tab', { name: /리포트\/내보내기/i }));
+    fireEvent.click(screen.getByRole('button', { name: /리포트 화면 열기/i }));
+    expect(await screen.findByRole('heading', { name: /리포트 출력 화면/i })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /pdf 저장 \/ 인쇄/i }));
+    expect(printSpy).toHaveBeenCalledTimes(1);
   });
 });
