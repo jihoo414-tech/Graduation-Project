@@ -192,7 +192,7 @@ export function LandingPage({ onRequestDemo, onViewProduct }: LandingPageProps) 
             </div>
             <div className="reference-proof-card">
               <span>Demo</span>
-              <strong>발표용 end-to-end flow 준비</strong>
+              <strong>end-to-end flow ready</strong>
             </div>
           </div>
         </div>
@@ -251,11 +251,15 @@ export function LandingPage({ onRequestDemo, onViewProduct }: LandingPageProps) 
 
           <div className="reference-stage-main">
             <div className="reference-stage-window">
-              <div className="reference-window-chrome">
-                <span />
-                <span />
-                <span />
-                <p>Clinical workspace</p>
+              <div className="reference-stage-banner">
+                <div className="reference-stage-banner-copy">
+                  <span>Clinical workspace</span>
+                  <strong>{activePanel.label}</strong>
+                </div>
+                <div className="reference-stage-badges" aria-hidden="true">
+                  <span>Care flow</span>
+                  <span>{activePreview === 'analysis' ? 'Risk review' : activePreview === 'intake' ? 'Intake' : 'Explanation'}</span>
+                </div>
               </div>
 
               <div className="reference-window-body">
