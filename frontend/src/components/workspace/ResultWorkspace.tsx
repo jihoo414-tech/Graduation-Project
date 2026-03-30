@@ -1,10 +1,12 @@
 import { useMemo, useState } from 'react';
 import type { MouseEventHandler } from 'react';
-import type { ActionFeedback, JourneyContext } from '../../lib/demoJourney';
+import { reportStageLabels, type ActionFeedback, type JourneyContext, type ReportStage } from '../../lib/demoJourney';
+import { formatCancerTypeLabel } from '../../lib/productContent';
 import type { ResultEnvelope } from '../../lib/types';
 import {
   buildClinicianSummary,
   buildConfidenceLevel,
+  buildModelPlaceholderNotes,
   buildPatientFriendlySummary,
   buildPatientInputSummary,
   buildReviewStatus,
@@ -20,6 +22,7 @@ type ResultWorkspaceProps = {
   result: ResultEnvelope;
   journeyContext: JourneyContext;
   actionFeedback: ActionFeedback | null;
+  reportStage: ReportStage;
   onBackToUpload: MouseEventHandler<HTMLButtonElement>;
   onSavePdf: MouseEventHandler<HTMLButtonElement>;
   onSaveImage: MouseEventHandler<HTMLButtonElement>;
@@ -58,6 +61,7 @@ export function ResultWorkspace({
   result,
   journeyContext,
   actionFeedback,
+  reportStage,
   onBackToUpload,
   onSavePdf,
   onSaveImage,
@@ -77,6 +81,7 @@ export function ResultWorkspace({
   const patientSummaryText = useMemo(() => buildPatientFriendlySummary(result), [result]);
   const confidenceLevel = useMemo(() => buildConfidenceLevel(result), [result]);
   const reviewStatus = useMemo(() => buildReviewStatus(result), [result]);
+  const modelPlaceholderNotes = useMemo(() => buildModelPlaceholderNotes(result), [result]);
   const timepointCards = useMemo(
     () => [
       { label: '1년', value: getTimepointProbability(curve, 1) },
@@ -159,7 +164,7 @@ export function ResultWorkspace({
                 <article className="workspace-panel-card">
                   <h3>환자 / 케이스 요약</h3>
                   <ul className="detail-list compact-list">
-                    <li>암종: LUAD (prototype)</li>
+                    <li>암종: {formatCancerTypeLabel(journeyContext.cancerType)}</li>
                     <li>병기: {result.normalized_input.clinical.pathologic_stage ?? '미입력'}</li>
                     <li>주요 임상 변수: {patientSummary.clinicalSummary.join(' · ') || '입력된 임상정보 없음'}</li>
                     <li>주요 유전체 포인트: {patientSummary.geneNames.join(', ') || '없음'}</li>
@@ -300,6 +305,7 @@ export function ResultWorkspace({
                     <li>요약 복사</li>
                     <li>결과 JSON 보기</li>
                   </ul>
+                  <p className="muted-text">현재 리포트 상태: {reportStageLabels[reportStage]}</p>
                 </article>
 
                 <article className="workspace-panel-card">
@@ -330,6 +336,15 @@ export function ResultWorkspace({
                       리포트 화면 열기
                     </button>
                   </div>
+                </article>
+
+                <article className="workspace-panel-card wide-card">
+                  <h3>모델 연결 슬롯</h3>
+                  <ul className="detail-list">
+                    {modelPlaceholderNotes.map((note) => (
+                      <li key={note}>{note}</li>
+                    ))}
+                  </ul>
                 </article>
               </div>
             ) : null}

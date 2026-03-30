@@ -2,16 +2,22 @@ import { useMemo, useState } from 'react';
 import type { MouseEventHandler } from 'react';
 import type { ActionFeedback, JourneyContext } from '../../lib/demoJourney';
 import type { ResultEnvelope } from '../../lib/types';
-import { buildClinicianSummary, buildPatientFriendlySummary } from '../../lib/workspace';
+import {
+  buildCommunicationTips,
+  buildCounselingChecklist,
+  buildExplanationSummary,
+  explanationAudienceLabels,
+  type ExplanationAudience,
+} from '../../lib/workspace';
 
 type ExplanationPageProps = {
   result: ResultEnvelope;
   journeyContext: JourneyContext;
   actionFeedback: ActionFeedback | null;
   onBackToResult: MouseEventHandler<HTMLButtonElement>;
-  onCopy: MouseEventHandler<HTMLButtonElement>;
-  onPrint: MouseEventHandler<HTMLButtonElement>;
-  onAddNote: MouseEventHandler<HTMLButtonElement>;
+  onCopy: (content: string) => void;
+  onPrint: (content: string) => void;
+  onAddNote: (content: string) => void;
 };
 
 export function ExplanationPage({
@@ -23,10 +29,10 @@ export function ExplanationPage({
   onPrint,
   onAddNote,
 }: ExplanationPageProps) {
-  const [tone, setTone] = useState<'clinician' | 'patient'>('patient');
-  const clinicianSummary = useMemo(() => buildClinicianSummary(result), [result]);
-  const patientSummary = useMemo(() => buildPatientFriendlySummary(result), [result]);
-  const activeText = tone === 'clinician' ? clinicianSummary : patientSummary;
+  const [audience, setAudience] = useState<ExplanationAudience>('patient');
+  const activeText = useMemo(() => buildExplanationSummary(result, audience), [result, audience]);
+  const counselingChecklist = useMemo(() => buildCounselingChecklist(result), [result]);
+  const communicationTips = useMemo(() => buildCommunicationTips(audience), [audience]);
 
   return (
     <main className="product-shell">
@@ -53,40 +59,58 @@ export function ExplanationPage({
           </div>
         ) : null}
 
-        <div className="button-row">
-          <button
-            type="button"
-            className={`workspace-tab ${tone === 'clinician' ? 'is-active' : ''}`}
-            onClick={() => setTone('clinician')}
-          >
-            전문의용 요약
-          </button>
-          <button
-            type="button"
-            className={`workspace-tab ${tone === 'patient' ? 'is-active' : ''}`}
-            onClick={() => setTone('patient')}
-          >
-            환자용 설명
-          </button>
+        <div className="workspace-tabs" role="tablist" aria-label="설명 대상 전환">
+          {(Object.keys(explanationAudienceLabels) as ExplanationAudience[]).map((audienceOption) => (
+            <button
+              key={audienceOption}
+              type="button"
+              role="tab"
+              aria-selected={audience === audienceOption}
+              className={`workspace-tab ${audience === audienceOption ? 'is-active' : ''}`}
+              onClick={() => setAudience(audienceOption)}
+            >
+              {explanationAudienceLabels[audienceOption]}
+            </button>
+          ))}
         </div>
 
-        <article className="workspace-inline-output">
-          <h3>{tone === 'clinician' ? '전문의용 요약' : '환자용 설명'}</h3>
-          <p>{activeText}</p>
-          <p className="muted-text">
-            <abbr title="확정적인 결과가 아니라 추정치입니다.">불확실성</abbr>을 함께 설명하고, 담당 전문의의
-            판단과 함께 전달해야 합니다.
-          </p>
-        </article>
+        <div className="workspace-panel-grid three-col explanation-grid">
+          <article className="workspace-inline-output">
+            <h3>{explanationAudienceLabels[audience]}</h3>
+            <p>{activeText}</p>
+            <p className="muted-text">
+              <abbr title="확정적인 결과가 아니라 추정치입니다.">불확실성</abbr>을 함께 설명하고, 담당 전문의의
+              판단과 함께 전달해야 합니다.
+            </p>
+          </article>
+
+          <article className="workspace-summary-card">
+            <h3>상담 체크리스트</h3>
+            <ul className="detail-list">
+              {counselingChecklist.map((item) => (
+                <li key={item}>{item}</li>
+              ))}
+            </ul>
+          </article>
+
+          <article className="workspace-summary-card">
+            <h3>설명 팁</h3>
+            <ul className="detail-list">
+              {communicationTips.map((tip) => (
+                <li key={tip}>{tip}</li>
+              ))}
+            </ul>
+          </article>
+        </div>
 
         <div className="button-row">
-          <button type="button" className="secondary-button" onClick={onCopy}>
+          <button type="button" className="secondary-button" onClick={() => onCopy(activeText)}>
             복사
           </button>
-          <button type="button" className="secondary-button" onClick={onPrint}>
+          <button type="button" className="secondary-button" onClick={() => onPrint(activeText)}>
             인쇄용 요약 생성
           </button>
-          <button type="button" className="primary-button" onClick={onAddNote}>
+          <button type="button" className="primary-button" onClick={() => onAddNote(activeText)}>
             상담 메모에 추가
           </button>
         </div>

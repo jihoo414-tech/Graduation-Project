@@ -1,5 +1,6 @@
 import type { MouseEventHandler } from 'react';
 import type { JourneyContext } from '../../lib/demoJourney';
+import { PRODUCT_BRAND_NAME, PRODUCT_WORKSPACE_NAME } from '../../lib/productContent';
 
 type SidebarItem = {
   label: string;
@@ -36,8 +37,8 @@ export function AppSidebar({
           <span />
         </div>
         <div>
-          <p className="marketing-kicker">Medical Explain AI</p>
-          <h2>Clinical Workspace</h2>
+          <p className="marketing-kicker">{PRODUCT_BRAND_NAME}</p>
+          <h2>{PRODUCT_WORKSPACE_NAME}</h2>
           <p className="muted-text">{journeyContext.sessionLabel} · {journeyContext.stageLabel}</p>
         </div>
       </div>
@@ -71,7 +72,7 @@ export function AppSidebar({
         <strong>{clinicianName}</strong>
         <span>{journeyContext.caseId}</span>
         <button type="button" className="secondary-button" onClick={onLogout}>
-          로그아웃
+          세션 초기화
         </button>
       </div>
     </aside>

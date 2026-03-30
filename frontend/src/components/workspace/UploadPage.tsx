@@ -1,9 +1,6 @@
 import type { ChangeEventHandler, DragEventHandler, FormEventHandler, MouseEventHandler } from 'react';
 import type {
   ActionFeedback,
-  CaseDraft,
-  DemoSession,
-  JourneyChecklistItem,
   JourneyContext,
 } from '../../lib/demoJourney';
 import type { ContractExamplesResponse, ResultEnvelope } from '../../lib/types';
@@ -11,10 +8,7 @@ import { buildPatientInputSummary } from '../../lib/workspace';
 
 type UploadPageProps = {
   caseId: string;
-  draft: CaseDraft;
   journeyContext: JourneyContext;
-  session: DemoSession;
-  checklist: JourneyChecklistItem[];
   viewState: 'idle' | 'loading' | 'success' | 'error';
   selectedFileLabel: string;
   isDragActive: boolean;
@@ -35,20 +29,9 @@ type UploadPageProps = {
   onConfirmAnalysis: MouseEventHandler<HTMLButtonElement>;
 };
 
-const uploadRules = [
-  '1회 업로드 = 환자 1명',
-  '필수: deidentified_patient_id, gene, variant_classification',
-  '선택: age, pathologic_stage, gender',
-];
-
-const cautionItems = ['직접 식별정보 금지', '의사결정 보조용'];
-
 export function UploadPage({
   caseId,
-  draft,
   journeyContext,
-  session,
-  checklist,
   viewState,
   selectedFileLabel,
   isDragActive,
@@ -93,110 +76,65 @@ export function UploadPage({
           </div>
         ) : null}
 
-        <div className="upload-page-grid">
-          <section className="upload-primary-panel">
-            <form className="upload-form" onSubmit={onSubmit}>
-              <label
-                className={`file-picker ${isDragActive ? 'drag-active' : ''}`}
-                htmlFor="patient-file"
-                onDragEnter={onDragEnter}
-                onDragOver={onDragOver}
-                onDragLeave={onDragLeave}
-                onDrop={onDrop}
+        <section className="upload-primary-panel">
+          <form className="upload-form" onSubmit={onSubmit}>
+            <label
+              className={`file-picker ${isDragActive ? 'drag-active' : ''}`}
+              htmlFor="patient-file"
+              onDragEnter={onDragEnter}
+              onDragOver={onDragOver}
+              onDragLeave={onDragLeave}
+              onDrop={onDrop}
+            >
+              <span>CSV 또는 JSON 선택</span>
+              <span className="drop-hint">또는 이 영역으로 파일을 끌어다 놓으세요.</span>
+              <input
+                id="patient-file"
+                name="patient-file"
+                type="file"
+                accept=".csv,application/json,.json,text/csv"
+                onChange={onFileChange}
+              />
+            </label>
+
+            <div className="file-meta">
+              <strong>선택한 파일</strong>
+              <span>{selectedFileLabel}</span>
+            </div>
+
+            <div className="button-row">
+              <button
+                type="button"
+                className="secondary-button"
+                onClick={onDownloadCsv}
+                disabled={!contractExamples}
               >
-                <span>CSV 또는 JSON 선택</span>
-                <span className="drop-hint">또는 이 영역으로 파일을 끌어다 놓으세요.</span>
-                <input
-                  id="patient-file"
-                  name="patient-file"
-                  type="file"
-                  accept=".csv,application/json,.json,text/csv"
-                  onChange={onFileChange}
-                />
-              </label>
+                CSV 예시 다운로드
+              </button>
+              <button
+                type="button"
+                className="secondary-button"
+                onClick={onDownloadJson}
+                disabled={!contractExamples}
+              >
+                JSON 예시 다운로드
+              </button>
+              <button
+                type="button"
+                className="secondary-button"
+                onClick={onUseSampleData}
+                disabled={!contractExamples}
+              >
+                샘플 데이터로 테스트
+              </button>
+              <button type="submit" className="primary-button" disabled={viewState === 'loading'}>
+                {viewState === 'loading' ? '업로드 중…' : '입력 확인 준비'}
+              </button>
+            </div>
+          </form>
 
-              <div className="file-meta">
-                <strong>선택한 파일</strong>
-                <span>{selectedFileLabel}</span>
-              </div>
-
-              <div className="button-row">
-                <button
-                  type="button"
-                  className="secondary-button"
-                  onClick={onDownloadCsv}
-                  disabled={!contractExamples}
-                >
-                  CSV 예시 다운로드
-                </button>
-                <button
-                  type="button"
-                  className="secondary-button"
-                  onClick={onDownloadJson}
-                  disabled={!contractExamples}
-                >
-                  JSON 예시 다운로드
-                </button>
-                <button
-                  type="button"
-                  className="secondary-button"
-                  onClick={onUseSampleData}
-                  disabled={!contractExamples}
-                >
-                  샘플 데이터로 테스트
-                </button>
-                <button type="submit" className="primary-button" disabled={viewState === 'loading'}>
-                  {viewState === 'loading' ? '업로드 중…' : '입력 확인 준비'}
-                </button>
-              </div>
-            </form>
-
-            {contractExamplesError ? <p className="muted-text">{contractExamplesError}</p> : null}
-          </section>
-
-          <aside className="upload-side-panel">
-            <article className="workspace-info-card">
-              <h2>현재 데모 컨텍스트</h2>
-              <ul className="detail-list">
-                <li>담당 의료진: {session.clinicianName}</li>
-                <li>기관 / 전공: {journeyContext.sessionLabel}</li>
-                <li>활성 케이스: {draft.caseId} · {draft.cancerType}</li>
-                <li>다음 단계: {journeyContext.nextStepLabel}</li>
-              </ul>
-            </article>
-
-            <article className="workspace-info-card">
-              <h2>분석 전 체크리스트</h2>
-              <ul className="detail-list">
-                {checklist.map((item) => (
-                  <li key={item.label}>
-                    <strong>{item.complete ? '완료' : '대기'}</strong> · {item.label}
-                    <br />
-                    <span className="muted-text">{item.detail}</span>
-                  </li>
-                ))}
-              </ul>
-            </article>
-
-            <article className="workspace-info-card">
-              <h2>업로드 규칙</h2>
-              <ul className="detail-list">
-                {uploadRules.map((rule) => (
-                  <li key={rule}>{rule}</li>
-                ))}
-              </ul>
-            </article>
-
-            <article className="workspace-info-card caution-card">
-              <h2>주의 문구</h2>
-              <ul className="detail-list">
-                {cautionItems.map((item) => (
-                  <li key={item}>{item}</li>
-                ))}
-              </ul>
-            </article>
-          </aside>
-        </div>
+          {contractExamplesError ? <p className="muted-text">{contractExamplesError}</p> : null}
+        </section>
 
         {inputSummary ? (
           <section className="input-review-panel">

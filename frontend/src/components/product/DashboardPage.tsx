@@ -1,4 +1,4 @@
-import type { MouseEventHandler } from 'react';
+import type { ChangeEventHandler, MouseEventHandler } from 'react';
 import type { CaseStatus, DemoSession, JourneyContext } from '../../lib/demoJourney';
 
 type CaseItem = {
@@ -12,6 +12,8 @@ type DashboardPageProps = {
   cases: CaseItem[];
   session: DemoSession;
   journeyContext: JourneyContext;
+  searchQuery: string;
+  onSearchChange: ChangeEventHandler<HTMLInputElement>;
   onStartCase: MouseEventHandler<HTMLButtonElement>;
   onRunSampleCase: MouseEventHandler<HTMLButtonElement>;
 };
@@ -29,6 +31,8 @@ export function DashboardPage({
   cases,
   session,
   journeyContext,
+  searchQuery,
+  onSearchChange,
   onStartCase,
   onRunSampleCase,
 }: DashboardPageProps) {
@@ -41,6 +45,12 @@ export function DashboardPage({
     { label: 'Review queue', value: String(reviewQueueCount), meta: '의사 검토 필요' },
     { label: 'Explanation ready', value: String(explanationReadyCount), meta: '상담 문장 생성 완료' },
   ];
+  const normalizedQuery = searchQuery.trim().toLowerCase();
+  const filteredCases = normalizedQuery
+    ? cases.filter((caseItem) =>
+        `${caseItem.id} ${caseItem.cancerType} ${caseItem.status}`.toLowerCase().includes(normalizedQuery),
+      )
+    : cases;
 
   return (
     <main className="product-shell">
@@ -80,6 +90,8 @@ export function DashboardPage({
                 type="search"
                 placeholder="최근 케이스 검색"
                 aria-label="최근 케이스 검색"
+                value={searchQuery}
+                onChange={onSearchChange}
               />
               <button type="button" className="secondary-button dashboard-new-case-button" onClick={onStartCase}>
                 새 케이스
@@ -87,9 +99,9 @@ export function DashboardPage({
             </div>
           </div>
 
-          {cases.length > 0 ? (
+          {filteredCases.length > 0 ? (
             <div className="case-list">
-              {cases.map((caseItem) => (
+              {filteredCases.map((caseItem) => (
                 <article key={caseItem.id} className="case-list-item">
                   <div>
                     <strong>{caseItem.id}</strong>
@@ -104,6 +116,8 @@ export function DashboardPage({
                 </article>
               ))}
             </div>
+          ) : cases.length > 0 ? (
+            <p className="muted-text">검색어와 일치하는 케이스가 없습니다.</p>
           ) : (
             <p className="muted-text">아직 직접 입력하거나 실행한 케이스가 없습니다.</p>
           )}

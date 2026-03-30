@@ -1545,12 +1545,61 @@ strong {
   border-top: 1px solid rgba(16, 24, 40, 0.08);
 }
 
-.error-panel {
+.error-modal-backdrop {
   position: fixed;
-  right: 24px;
-  bottom: 24px;
-  width: min(420px, calc(100vw - 32px));
-  z-index: 20;
+  inset: 0;
+  z-index: 40;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(15, 23, 42, 0.18);
+}
+
+.error-panel {
+  width: min(360px, calc(100vw - 40px));
+  max-width: 360px;
+  min-height: 240px;
+  z-index: 41;
+  display: grid;
+  align-content: start;
+  gap: 16px;
+  padding: 22px;
+  border-radius: 20px;
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  background: rgba(255, 255, 255, 0.98);
+  box-shadow: 0 28px 60px rgba(15, 23, 42, 0.22);
+}
+
+.error-panel-header {
+  display: grid;
+  gap: 8px;
+}
+
+.error-dialog-heading {
+  display: grid;
+  gap: 8px;
+}
+
+.error-dialog-heading h2 {
+  margin: 0;
+  font-size: 1.9rem;
+  line-height: 1.1;
+  letter-spacing: -0.04em;
+  font-weight: 600;
+}
+
+.error-dialog-heading p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 1rem;
+  line-height: 1.5;
+}
+
+.error-panel-close {
+  min-height: 38px;
+  width: 100%;
+  white-space: nowrap;
+  margin-top: 4px;
 }
 
 .error-code {
@@ -1570,6 +1619,11 @@ strong {
   border-radius: var(--radius-lg);
   border: 1px solid var(--border);
   background: rgba(246, 246, 246, 0.82);
+}
+
+.report-stage-card,
+.explanation-grid {
+  margin-bottom: 18px;
 }
 
 .muted-text {
@@ -1712,10 +1766,13 @@ strong {
     justify-items: start;
   }
 
-  .error-panel {
-    right: 10px;
-    bottom: 10px;
-    width: calc(100vw - 20px);
+  .error-modal-backdrop {
+    padding: 12px;
+  }
+
+  .error-panel-header {
+    flex-direction: column;
+    align-items: start;
   }
 }
 

@@ -74,6 +74,8 @@ export type ActionFeedback = {
   message: string;
 };
 
+export type ReportStage = 'draft' | 'clinician-reviewed' | 'patient-ready';
+
 export type JourneyContext = {
   caseId: string;
   cancerType: string;
@@ -143,6 +145,14 @@ export const defaultDemoSession: DemoSession = {
   requestGoal: '암 진단 결과 해석 및 환자 설명 지원',
   note: '재발 위험 해석과 환자 설명 생성 데모를 확인하고 싶습니다.',
   entryPoint: 'landing',
+};
+
+export const defaultReportStage: ReportStage = 'draft';
+
+export const reportStageLabels: Record<ReportStage, string> = {
+  draft: 'Draft',
+  'clinician-reviewed': 'Clinician reviewed',
+  'patient-ready': 'Patient ready',
 };
 
 export const normalizePathname = (pathname: string) => {

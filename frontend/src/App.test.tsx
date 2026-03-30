@@ -1,43 +1,56 @@
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import App from './App';
 
-const mockResultResponse = {
-  result_version: 'v1',
-  patient: { deidentified_patient_id: 'P-001' },
-  normalized_input: {
-    deidentified_patient_id: 'P-001',
-    gene_variants: [{ gene: 'TP53', variant_classification: 'Missense_Mutation' }],
-    clinical: {
-      age: 67,
-      pathologic_stage: 'IIA',
-      gender: 'female',
+const mockPatientId = 'P-001';
+const mockVariant = { gene: 'TP53', variant_classification: 'Missense_Mutation' };
+
+const buildMockJsonExample = () => ({
+  deidentified_patient_id: mockPatientId,
+  gene_variants: [mockVariant],
+  age: 67,
+  pathologic_stage: 'IIA',
+  gender: 'female',
+});
+
+const buildMockResultResponse = () => {
+  const mockJsonExample = buildMockJsonExample();
+
+  return {
+    result_version: 'v1' as const,
+    patient: { deidentified_patient_id: mockJsonExample.deidentified_patient_id },
+    normalized_input: {
+      deidentified_patient_id: mockJsonExample.deidentified_patient_id,
+      gene_variants: mockJsonExample.gene_variants,
+      clinical: {
+        age: mockJsonExample.age,
+        pathologic_stage: mockJsonExample.pathologic_stage,
+        gender: mockJsonExample.gender,
+      },
     },
-  },
-  result: {
-    adapter: 'mock',
-    summary: {
-      risk_level: '중간 위험',
-      risk_score: 0.62,
-      text: '프로토타입용 mock 추론 결과입니다.',
+    result: {
+      adapter: 'mock',
+      summary: {
+        risk_level: '중간 위험',
+        risk_score: 0.62,
+        text: '프로토타입용 mock 추론 결과입니다.',
+      },
+      artifacts: {
+        survival_curve: null,
+        explanations: [],
+      },
     },
-    artifacts: {
-      survival_curve: null,
-      explanations: [],
-    },
-  },
-  warnings: [],
+    warnings: [],
+  };
 };
 
-const mockContractExamples = {
-  csv_example: 'deidentified_patient_id,gene,variant_classification\nP-001,TP53,Missense_Mutation',
-  json_example: {
-    deidentified_patient_id: 'P-001',
-    gene_variants: [{ gene: 'TP53', variant_classification: 'Missense_Mutation' }],
-    age: 67,
-    pathologic_stage: 'IIA',
-    gender: 'female',
-  },
-  envelope_example: mockResultResponse,
+const buildMockContractExamples = () => {
+  const mockResultResponse = buildMockResultResponse();
+
+  return {
+    csv_example: `deidentified_patient_id,gene,variant_classification\n${mockPatientId},${mockVariant.gene},${mockVariant.variant_classification}`,
+    json_example: buildMockJsonExample(),
+    envelope_example: mockResultResponse,
+  };
 };
 
 const mockFetch = (options?: {
@@ -45,7 +58,8 @@ const mockFetch = (options?: {
   uploadBody?: unknown;
 }) => {
   const uploadStatus = options?.uploadStatus ?? 200;
-  const uploadBody = options?.uploadBody ?? mockResultResponse;
+  const uploadBody = options?.uploadBody ?? buildMockResultResponse();
+  const mockContractExamples = buildMockContractExamples();
 
   return vi.spyOn(window, 'fetch').mockImplementation((input) => {
     const url =
@@ -79,7 +93,14 @@ const mockFetch = (options?: {
 
 const goToUploadPage = async () => {
   expect(await screen.findByRole('heading', { name: /로그인 후 첫 화면/i })).toBeInTheDocument();
-  fireEvent.click(screen.getByRole('button', { name: /샘플 케이스 실행/i }));
+  fireEvent.click(screen.getByRole('button', { name: /cases/i }));
+  fireEvent.click(await screen.findByRole('button', { name: /다음 단계/i }));
+  fireEvent.change(screen.getByLabelText(/데이터 입력 방식/i), {
+    target: { value: 'CSV/JSON 업로드' },
+  });
+  fireEvent.click(screen.getByRole('button', { name: /다음 단계/i }));
+  fireEvent.click(screen.getByRole('button', { name: /다음 단계/i }));
+  fireEvent.click(screen.getByRole('button', { name: /분석 시작/i }));
   expect(await screen.findByRole('heading', { name: /데이터 입력 \/ 업로드/i })).toBeInTheDocument();
 };
 
@@ -116,6 +137,7 @@ const expectSummaryCardValue = (label: RegExp, value: string) => {
 describe('App', () => {
   afterEach(() => {
     vi.restoreAllMocks();
+    window.localStorage.clear();
     window.history.replaceState({}, '', '/');
   });
 
@@ -240,7 +262,7 @@ describe('App', () => {
     fireEvent.change(fileInput, { target: { files: [file] } });
     fireEvent.click(screen.getByRole('button', { name: /입력 확인 준비/i }));
 
-    expect(await screen.findByRole('alert')).toBeInTheDocument();
+    expect(await screen.findByRole('alertdialog')).toBeInTheDocument();
     expect(screen.getByText(/missing_required_field/i)).toBeInTheDocument();
     expect(screen.getByText(/gene_variants\[0\]\.gene/i)).toBeInTheDocument();
   });
@@ -253,9 +275,26 @@ describe('App', () => {
     fireEvent.click(screen.getByRole('button', { name: /입력 확인 준비/i }));
 
     await waitFor(() => {
-      expect(screen.getByRole('alert')).toBeInTheDocument();
+      expect(screen.getByRole('alertdialog')).toBeInTheDocument();
     });
     expect(screen.getByText(/업로드할 csv 또는 json 파일을 먼저 선택/i)).toBeInTheDocument();
+  });
+
+  it('shows a popup error immediately when an unsupported file is selected', async () => {
+    mockFetch();
+
+    render(<App />);
+    await goToUploadPage();
+
+    const fileInput = screen.getByLabelText(/csv 또는 json 선택/i);
+    fireEvent.change(fileInput, { target: { files: [new File(['oops'], 'patient.txt', { type: 'text/plain' })] } });
+
+    const popup = await screen.findByRole('alertdialog');
+    expect(within(popup).getByText(/지원되는 파일 형식은 csv와 json/i)).toBeInTheDocument();
+    fireEvent.click(within(popup).getByRole('button', { name: /닫기/i }));
+    await waitFor(() => {
+      expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+    });
   });
 
   it('renders sample download buttons after loading contract examples', async () => {
@@ -303,6 +342,59 @@ describe('App', () => {
     expect(screen.getByText(/아직 직접 입력하거나 실행한 케이스가 없습니다/i)).toBeInTheDocument();
   });
 
+  it('auto-uploads sample data when sample mode is selected from cases flow', async () => {
+    mockFetch();
+
+    render(<App />);
+
+    expect(await screen.findByRole('heading', { name: /로그인 후 첫 화면/i })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /cases/i }));
+
+    fireEvent.click(screen.getByRole('button', { name: /다음 단계/i }));
+    fireEvent.change(screen.getByLabelText(/데이터 입력 방식/i), {
+      target: { value: '샘플 데이터로 테스트' },
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /다음 단계/i }));
+    fireEvent.click(screen.getByRole('button', { name: /다음 단계/i }));
+    fireEvent.click(screen.getByRole('button', { name: /분석 시작/i }));
+
+    expect(await screen.findByText(/모델에 넣기 전 입력 검토/i)).toBeInTheDocument();
+    expect(screen.getByText(/샘플 환자 데이터를 자동으로 업로드해 입력 검토 패널까지 준비했습니다/i)).toBeInTheDocument();
+  });
+
+  it('filters recent cases with the dashboard search input', async () => {
+    mockFetch();
+
+    render(<App />);
+    await uploadPatientFileAndReachResult();
+    fireEvent.click(screen.getByRole('button', { name: /dashboard/i }));
+
+    const searchInput = await screen.findByRole('searchbox', { name: /최근 케이스 검색/i });
+    fireEvent.change(searchInput, { target: { value: 'NOT-FOUND' } });
+
+    expect(screen.getByText(/검색어와 일치하는 케이스가 없습니다/i)).toBeInTheDocument();
+    fireEvent.change(searchInput, { target: { value: 'LUAD-2026-001' } });
+    expect(screen.getByRole('searchbox', { name: /최근 케이스 검색/i })).toHaveValue('LUAD-2026-001');
+    expect(screen.getAllByText(/LUAD-2026-001/i).length).toBeGreaterThan(0);
+  });
+
+  it('restores the latest case context from local storage on a fresh render', async () => {
+    mockFetch();
+
+    const firstRender = render(<App />);
+    await uploadPatientFileAndReachResult();
+    fireEvent.click(screen.getByRole('button', { name: /dashboard/i }));
+    expect(await screen.findByRole('heading', { name: /최근 분석한 케이스/i })).toBeInTheDocument();
+    expect(screen.getAllByText(/LUAD-2026-001/i).length).toBeGreaterThan(0);
+
+    firstRender.unmount();
+    render(<App />);
+
+    expect(await screen.findByRole('heading', { name: /최근 분석한 케이스/i })).toBeInTheDocument();
+    expect(screen.getAllByText(/LUAD-2026-001/i).length).toBeGreaterThan(0);
+  });
+
   it('opens the explanation view from result workspace and runs a print finisher action', async () => {
     mockFetch();
     const printSpy = vi.spyOn(window, 'print').mockImplementation(() => undefined);
@@ -313,6 +405,7 @@ describe('App', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /환자 설명 생성/i }));
     expect(await screen.findByRole('heading', { name: /환자 설명용 화면/i })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: /불안이 큰 환자용/i })).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: /인쇄용 요약 생성/i }));
     expect(printSpy).toHaveBeenCalledTimes(1);
@@ -329,6 +422,7 @@ describe('App', () => {
     fireEvent.click(screen.getByRole('tab', { name: /리포트\/내보내기/i }));
     fireEvent.click(screen.getByRole('button', { name: /리포트 화면 열기/i }));
     expect(await screen.findByRole('heading', { name: /리포트 출력 화면/i })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: /patient ready/i })).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: /pdf 저장 \/ 인쇄/i }));
     expect(printSpy).toHaveBeenCalledTimes(1);

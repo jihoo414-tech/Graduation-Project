@@ -21,7 +21,7 @@ import {
   analysisSteps,
   buildCasePaths,
   buildJourneyContext,
-  buildUploadChecklist,
+  defaultReportStage,
   defaultCaseDraft,
   defaultDemoSession,
   deriveCaseStatus,
@@ -33,10 +33,46 @@ import {
   type ActionFeedback,
   type CaseDraft,
   type DemoRequestFormValues,
+  type ReportStage,
   type ViewState,
 } from './lib/demoJourney';
+import {
+  clearPersistedWorkspaceState,
+  loadPersistedWorkspaceState,
+  persistWorkspaceState,
+} from './lib/persistence';
 import type { ContractExamplesResponse, ResultEnvelope } from './lib/types';
-import { buildClinicianSummary, buildPatientFriendlySummary } from './lib/workspace';
+import { buildClinicianSummary } from './lib/workspace';
+
+const supportedUploadExtensions = ['.csv', '.json'];
+
+const getClientUploadError = (file: File) => {
+  const lowerName = file.name.toLowerCase();
+  const hasSupportedExtension = supportedUploadExtensions.some((extension) => lowerName.endsWith(extension));
+  const isSupportedType =
+    file.type === '' ||
+    file.type === 'text/csv' ||
+    file.type === 'application/csv' ||
+    file.type === 'application/json';
+
+  if (!hasSupportedExtension || !isSupportedType) {
+    return {
+      code: 'UNSUPPORTED_FILE_TYPE',
+      message: '지원되는 파일 형식은 CSV와 JSON입니다.',
+      details: [{ field: 'file', rule: 'content_type' }],
+    };
+  }
+
+  if (file.size === 0) {
+    return {
+      code: 'MALFORMED_FILE',
+      message: '비어 있는 파일은 업로드할 수 없습니다.',
+      details: [{ field: 'file', rule: 'non_empty' }],
+    };
+  }
+
+  return null;
+};
 
 const downloadText = (filename: string, content: string, mimeType: string) => {
   const blob = new Blob([content], { type: mimeType });
@@ -87,20 +123,26 @@ const saveWorkspaceSnapshotAsImage = (result: ResultEnvelope) => {
 };
 
 function App() {
+  const persistedWorkspaceState = useMemo(() => loadPersistedWorkspaceState(), []);
   const [pathname, setPathname] = useState(() => normalizePathname(window.location.pathname));
-  const [session, setSession] = useState(defaultDemoSession);
-  const [caseDraft, setCaseDraft] = useState<CaseDraft>(defaultCaseDraft);
-  const [caseBuilderStep, setCaseBuilderStep] = useState(0);
+  const [session, setSession] = useState(persistedWorkspaceState.session ?? defaultDemoSession);
+  const [caseDraft, setCaseDraft] = useState<CaseDraft>(persistedWorkspaceState.caseDraft ?? defaultCaseDraft);
+  const [caseBuilderStep, setCaseBuilderStep] = useState(persistedWorkspaceState.caseBuilderStep ?? 0);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [viewState, setViewState] = useState<ViewState>('idle');
-  const [result, setResult] = useState<ResultEnvelope | null>(null);
+  const [result, setResult] = useState<ResultEnvelope | null>(persistedWorkspaceState.result ?? null);
   const [error, setError] = useState<ReturnType<typeof normalizeUnknownError> | null>(null);
   const [isDragActive, setIsDragActive] = useState(false);
   const [contractExamples, setContractExamples] = useState<ContractExamplesResponse | null>(null);
   const [contractExamplesError, setContractExamplesError] = useState<string | null>(null);
-  const [recentCases, setRecentCases] = useState(initialRecentCases);
+  const [recentCases, setRecentCases] = useState(persistedWorkspaceState.recentCases ?? initialRecentCases);
   const [analysisStepIndex, setAnalysisStepIndex] = useState(0);
   const [actionFeedback, setActionFeedback] = useState<ActionFeedback | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [reportStage, setReportStage] = useState<ReportStage>(
+    persistedWorkspaceState.reportStage ?? defaultReportStage,
+  );
+  const [shouldAutoUploadSample, setShouldAutoUploadSample] = useState(false);
 
   const activeCaseId = caseDraft.caseId.trim() || defaultCaseDraft.caseId;
   const casePaths = useMemo(() => buildCasePaths(activeCaseId), [activeCaseId]);
@@ -114,10 +156,6 @@ function App() {
         result,
       }),
     [caseDraft, session, pathname, casePaths, result],
-  );
-  const uploadChecklist = useMemo(
-    () => buildUploadChecklist({ draft: caseDraft, selectedFile, result }),
-    [caseDraft, selectedFile, result],
   );
 
   const navigate = (nextPath: string, options?: { replace?: boolean }) => {
@@ -134,6 +172,11 @@ function App() {
 
   const notifyAction = (message: string, tone: ActionFeedback['tone'] = 'success') => {
     setActionFeedback({ tone, message });
+  };
+
+  const dismissError = () => {
+    setError(null);
+    setViewState('idle');
   };
 
   useEffect(() => {
@@ -191,6 +234,17 @@ function App() {
   }, []);
 
   useEffect(() => {
+    persistWorkspaceState({
+      session,
+      caseDraft,
+      caseBuilderStep,
+      recentCases,
+      result,
+      reportStage,
+    });
+  }, [session, caseDraft, caseBuilderStep, recentCases, result, reportStage]);
+
+  useEffect(() => {
     if (pathname !== casePaths.analyzing || !result) {
       return;
     }
@@ -226,8 +280,46 @@ function App() {
     };
   }, [pathname, result, casePaths.analyzing, casePaths.result, activeCaseId, caseDraft.cancerType]);
 
+  useEffect(() => {
+    if (
+      pathname !== casePaths.upload ||
+      caseDraft.inputMethod !== '샘플 데이터로 테스트' ||
+      !shouldAutoUploadSample ||
+      !contractExamples ||
+      viewState !== 'idle' ||
+      result
+    ) {
+      return;
+    }
+
+    const sampleContent = JSON.stringify(contractExamples.json_example, null, 2);
+    const sampleFile = new File([sampleContent], 'sample-patient.json', { type: 'application/json' });
+
+    setShouldAutoUploadSample(false);
+    void performUpload(sampleFile, '샘플 환자 데이터를 자동으로 업로드해 입력 검토 패널까지 준비했습니다.');
+  }, [
+    pathname,
+    casePaths.upload,
+    caseDraft.inputMethod,
+    shouldAutoUploadSample,
+    contractExamples,
+    viewState,
+    result,
+  ]);
+
   const assignSelectedFile = (file: File | null) => {
     setIsDragActive(false);
+    if (file) {
+      const clientUploadError = getClientUploadError(file);
+
+      if (clientUploadError) {
+        setSelectedFile(null);
+        setError(clientUploadError);
+        setViewState('error');
+        return;
+      }
+    }
+
     setSelectedFile(file);
 
     if (viewState === 'error') {
@@ -244,13 +336,18 @@ function App() {
     setIsDragActive(false);
     setAnalysisStepIndex(0);
     setActionFeedback(null);
+    setReportStage(defaultReportStage);
+    setShouldAutoUploadSample(false);
   };
 
   const resetToDashboard = () => {
+    clearPersistedWorkspaceState();
     resetCaseFlow();
     setCaseBuilderStep(0);
     setCaseDraft(defaultCaseDraft);
     setSession(defaultDemoSession);
+    setRecentCases(initialRecentCases);
+    setSearchQuery('');
     navigate('/dashboard');
   };
 
@@ -261,6 +358,24 @@ function App() {
 
     return `${selectedFile.name} · ${Math.max(selectedFile.size / 1024, 0.1).toFixed(1)} KB`;
   }, [selectedFile]);
+
+  const performUpload = async (file: File, successMessage: string) => {
+    setSelectedFile(file);
+    setViewState('loading');
+    setError(null);
+    setResult(null);
+    setActionFeedback(null);
+
+    try {
+      const response = await uploadPatientFile(file);
+      setResult(response);
+      setViewState('success');
+      notifyAction(successMessage);
+    } catch (unknownError) {
+      setError(normalizeUnknownError(unknownError));
+      setViewState('error');
+    }
+  };
 
   const handleUpload = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -276,20 +391,7 @@ function App() {
       return;
     }
 
-    setViewState('loading');
-    setError(null);
-    setResult(null);
-    setActionFeedback(null);
-
-    try {
-      const response = await uploadPatientFile(selectedFile);
-      setResult(response);
-      setViewState('success');
-      notifyAction('입력 검토 패널이 준비되었습니다. 내용을 확인한 뒤 분석을 실행하세요.');
-    } catch (unknownError) {
-      setError(normalizeUnknownError(unknownError));
-      setViewState('error');
-    }
+    await performUpload(selectedFile, '입력 검토 패널이 준비되었습니다. 내용을 확인한 뒤 분석을 실행하세요.');
   };
 
   const handleCaseDraftFieldChange = (
@@ -359,10 +461,15 @@ function App() {
           cases={recentCases}
           session={session}
           journeyContext={journeyContext}
+          searchQuery={searchQuery}
+          onSearchChange={(event) => {
+            setSearchQuery(event.target.value);
+          }}
           onStartCase={openCaseBuilder}
           onRunSampleCase={() => {
             resetCaseFlow();
             setCaseDraft((currentDraft) => ({ ...currentDraft, inputMethod: '샘플 데이터로 테스트' }));
+            setShouldAutoUploadSample(true);
             navigate(casePaths.upload);
           }}
         />
@@ -404,6 +511,7 @@ function App() {
             }
 
             resetCaseFlow();
+            const isSampleFlow = caseDraft.inputMethod === '샘플 데이터로 테스트';
             setRecentCases((currentCases) =>
               upsertRecentCase(currentCases, {
                 id: activeCaseId,
@@ -412,6 +520,7 @@ function App() {
                 status: '업로드 준비',
               }),
             );
+            setShouldAutoUploadSample(isSampleFlow);
             navigate(casePaths.upload);
           }}
         />
@@ -422,10 +531,7 @@ function App() {
       return (
         <UploadPage
           caseId={activeCaseId}
-          draft={caseDraft}
           journeyContext={journeyContext}
-          session={session}
-          checklist={uploadChecklist}
           viewState={viewState}
           selectedFileLabel={selectedFileLabel}
           isDragActive={isDragActive}
@@ -482,8 +588,8 @@ function App() {
             }
 
             const sampleContent = JSON.stringify(contractExamples.json_example, null, 2);
-            assignSelectedFile(new File([sampleContent], 'sample-patient.json', { type: 'application/json' }));
-            notifyAction('샘플 환자 데이터를 업로드 준비 상태로 불러왔습니다.');
+            const sampleFile = new File([sampleContent], 'sample-patient.json', { type: 'application/json' });
+            void performUpload(sampleFile, '샘플 환자 데이터를 업로드해 입력 검토 패널까지 준비했습니다.');
           }}
           onResetInput={() => {
             resetCaseFlow();
@@ -507,6 +613,7 @@ function App() {
           result={result}
           journeyContext={journeyContext}
           actionFeedback={actionFeedback}
+          reportStage={reportStage}
           onBackToUpload={() => {
             navigate(casePaths.upload);
           }}
@@ -557,9 +664,9 @@ function App() {
           onBackToResult={() => {
             navigate(casePaths.result);
           }}
-          onCopy={() => {
+          onCopy={(content) => {
             void navigator.clipboard
-              ?.writeText(buildPatientFriendlySummary(result))
+              ?.writeText(content)
               .then(() => {
                 notifyAction('환자 설명 문장을 클립보드에 복사했습니다.');
               })
@@ -571,10 +678,10 @@ function App() {
             window.print();
             notifyAction('상담용 요약을 인쇄할 준비를 마쳤습니다.');
           }}
-          onAddNote={() => {
+          onAddNote={(content) => {
             downloadText(
               `${result.patient.deidentified_patient_id}-counseling-note.txt`,
-              buildPatientFriendlySummary(result),
+              content,
               'text/plain;charset=utf-8',
             );
             notifyAction('상담 메모 파일을 저장했습니다.');
@@ -589,6 +696,11 @@ function App() {
           result={result}
           journeyContext={journeyContext}
           actionFeedback={actionFeedback}
+          reportStage={reportStage}
+          onSetReportStage={(nextStage) => {
+            setReportStage(nextStage);
+            notifyAction(`리포트 상태를 ${nextStage} 단계로 업데이트했습니다.`, 'info');
+          }}
           onBack={() => {
             navigate(casePaths.result);
           }}
@@ -649,7 +761,7 @@ function App() {
       ) : null}
 
       {viewState === 'error' && error ? (
-        <ErrorAlert code={error.code} message={error.message} details={error.details} />
+        <ErrorAlert code={error.code} message={error.message} details={error.details} onDismiss={dismissError} />
       ) : null}
     </div>
   );

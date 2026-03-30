@@ -1,5 +1,9 @@
 import { useMemo, useState } from 'react';
 import type { MouseEventHandler } from 'react';
+import {
+  PRODUCT_BRAND_NAME,
+  PRODUCT_INTERPRETATION_WORKSPACE_NAME,
+} from '../../lib/productContent';
 
 type LandingPageProps = {
   onRequestDemo: MouseEventHandler<HTMLButtonElement>;
@@ -139,8 +143,8 @@ export function LandingPage({ onRequestDemo, onViewProduct }: LandingPageProps) 
           <span />
         </div>
         <div className="reference-brand-copy">
-          <p className="marketing-kicker">Medical Explain AI</p>
-          <strong>Clinical interpretation workspace</strong>
+          <p className="marketing-kicker">{PRODUCT_BRAND_NAME}</p>
+          <strong>{PRODUCT_INTERPRETATION_WORKSPACE_NAME}</strong>
         </div>
 
         <nav className="reference-nav-links" aria-label="랜딩 섹션">

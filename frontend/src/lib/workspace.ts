@@ -1,3 +1,4 @@
+import type { ReportStage } from './demoJourney';
 import type { ResultEnvelope, SurvivalCurve, SurvivalCurvePoint, Variant } from './types';
 
 export type FactorDirection = '위험 증가' | '위험 감소' | '중립/참고';
@@ -22,6 +23,13 @@ export type ReviewStatus =
   | '의사 검토 필요'
   | '설명 준비 완료'
   | '추가 입력 확인 필요';
+
+export type ExplanationAudience =
+  | 'clinician'
+  | 'patient'
+  | 'anxious-patient'
+  | 'detail-patient'
+  | 'caregiver';
 
 const missingClinicalLabels: Record<string, string> = {
   age: '나이',
@@ -219,8 +227,6 @@ export const buildClinicianSummary = (result: ResultEnvelope) => {
   ].join(' ');
 };
 
-export const buildWorkspaceJson = (result: ResultEnvelope) => JSON.stringify(result, null, 2);
-
 export const buildConfidenceLevel = (result: ResultEnvelope): ConfidenceLevel => {
   const missingFields = getMissingClinicalFields(result).length;
   const warningCount = result.warnings.length;
@@ -260,21 +266,112 @@ export const buildPatientFriendlySummary = (result: ResultEnvelope) => {
   ].join(' ');
 };
 
-export const buildProductPreviewCards = () => [
-  {
-    title: '케이스 등록 화면',
-    description: '기본 정보, 데이터 입력 방식, 분석 옵션을 단계별로 정리합니다.',
-  },
-  {
-    title: '결과 대시보드',
-    description: '위험도, 주요 영향 요인, 해석 패널을 한 화면에서 검토합니다.',
-  },
-  {
-    title: '설명 생성 화면',
-    description: '전문의용/환자용 설명을 전환하며 상담용 문장을 빠르게 준비합니다.',
-  },
-  {
-    title: '리포트 출력 화면',
-    description: '문서형 레이아웃으로 결과를 정리해 PDF 저장과 공유를 쉽게 합니다.',
-  },
+export const explanationAudienceLabels: Record<ExplanationAudience, string> = {
+  clinician: '전문의용 요약',
+  patient: '환자용 설명',
+  'anxious-patient': '불안이 큰 환자용',
+  'detail-patient': '자세히 알고 싶은 환자용',
+  caregiver: '보호자 설명용',
+};
+
+export const buildExplanationSummary = (
+  result: ResultEnvelope,
+  audience: ExplanationAudience,
+) => {
+  const confidenceLevel = buildConfidenceLevel(result);
+  const reviewStatus = buildReviewStatus(result);
+  const probability3Year = Math.round(getTimepointProbability(getWorkspaceSurvivalCurve(result), 3) * 100);
+  const clinicianSummary = buildClinicianSummary(result);
+
+  switch (audience) {
+    case 'clinician':
+      return clinicianSummary;
+    case 'anxious-patient':
+      return [
+        `현재 결과는 ${result.result.summary.risk_level}으로 분류되지만, 이것이 재발이 확정되었다는 뜻은 아닙니다.`,
+        `지금 가장 중요한 것은 담당 전문의와 함께 결과를 차분히 해석하고 추적 계획을 세우는 것입니다.`,
+        `현재 해석 신뢰 수준은 ${confidenceLevel}이며, 추가 임상정보가 들어오면 설명이 더 구체화될 수 있습니다.`,
+      ].join(' ');
+    case 'detail-patient':
+      return [
+        `현재 결과는 ${result.result.summary.risk_level}이며 위험 점수는 ${result.result.summary.risk_score.toFixed(2)}입니다.`,
+        `현재 입력 기준으로 3년 시점 예상 무사건 확률은 약 ${probability3Year}% 수준으로 요약할 수 있습니다.`,
+        `다만 이 결과는 확정 진단이 아니라 위험 예측 보조정보이며, ${reviewStatus} 상태로 전문의의 최종 해석이 함께 필요합니다.`,
+      ].join(' ');
+    case 'caregiver':
+      return [
+        `현재 결과는 ${result.result.summary.risk_level}으로 요약되며, 환자분의 경과를 더 주의 깊게 확인할 필요가 있습니다.`,
+        `이 수치는 앞으로의 가능성을 보는 참고정보이지 결과를 단정하는 수치가 아닙니다.`,
+        `가족/보호자 입장에서는 추적 진료 일정과 담당 전문의 설명을 함께 확인하는 것이 중요합니다.`,
+      ].join(' ');
+    case 'patient':
+    default:
+      return buildPatientFriendlySummary(result);
+  }
+};
+
+export const buildCounselingChecklist = (result: ResultEnvelope) => {
+  const missingFields = getMissingClinicalFields(result);
+  const reviewStatus = buildReviewStatus(result);
+
+  return [
+    `결과는 ${result.result.summary.risk_level}이지만 확정 진단이 아니라는 점을 먼저 설명하기`,
+    `현재 권장 검토 상태(${reviewStatus})와 추적 관찰 필요성을 안내하기`,
+    missingFields.length > 0
+      ? `누락된 정보(${missingFields.join(', ')}) 때문에 해석에 제한이 있음을 함께 알리기`
+      : '입력 임상정보가 포함되어 해석 안정성을 보조한다는 점을 알리기',
+  ];
+};
+
+export const buildCommunicationTips = (audience: ExplanationAudience) => {
+  if (audience === 'clinician') {
+    return [
+      '위험도 → 주요 요인 → 추적 계획 순서로 설명하세요.',
+      '확정 진단이 아니라는 점을 문서와 구두 설명 모두에 유지하세요.',
+    ];
+  }
+
+  if (audience === 'anxious-patient') {
+    return [
+      '단정적 표현을 피하고 “가능성”이라는 표현을 유지하세요.',
+      '다음 진료/추적 계획을 함께 제시해 불확실성을 줄이세요.',
+    ];
+  }
+
+  if (audience === 'detail-patient') {
+    return [
+      '수치와 의미를 함께 설명하세요.',
+      '근거와 한계를 짝지어 설명하면 신뢰가 높아집니다.',
+    ];
+  }
+
+  if (audience === 'caregiver') {
+    return [
+      '환자 대신 기억해야 할 추적 일정과 확인 포인트를 정리하세요.',
+      '불안 조장보다 돌봄 관점의 다음 액션을 명확히 제시하세요.',
+    ];
+  }
+
+  return [
+    '짧고 명확한 문장을 사용하세요.',
+    '담당 전문의 설명과 함께 이해해야 한다는 점을 유지하세요.',
+  ];
+};
+
+export const buildModelPlaceholderNotes = (result: ResultEnvelope) => [
+  `현재 연결된 adapter: ${result.result.adapter}`,
+  '향후 실제 모델 연결 시 HR/95% CI, 선택 feature, calibration summary를 같은 자리에서 표시할 수 있도록 슬롯을 비워두었습니다.',
+  '현재 결과는 mock adapter 기반이므로 모델별 상세 지표는 표시하지 않습니다.',
 ];
+
+export const buildReportStageNotes = (stage: ReportStage) => {
+  if (stage === 'patient-ready') {
+    return '환자 설명과 출력 문구까지 정리된 공유용 상태입니다.';
+  }
+
+  if (stage === 'clinician-reviewed') {
+    return '전문의 검토를 반영해 설명 문구와 주요 포인트를 다듬은 상태입니다.';
+  }
+
+  return '기본 결과를 정리한 초안 상태입니다.';
+};
