@@ -338,12 +338,6 @@ function App() {
           ? casePaths.report
           : '/cases';
 
-  const resumeActiveCasePath = result
-    ? casePaths.result
-    : pathname === '/cases/new' || viewState === 'idle'
-      ? '/cases/new'
-      : casePaths.upload;
-
   const renderSettingsPage = () => (
     <main className="product-shell">
       <section className="workspace-page-shell">
@@ -371,9 +365,6 @@ function App() {
             setCaseDraft((currentDraft) => ({ ...currentDraft, inputMethod: '샘플 데이터로 테스트' }));
             navigate(casePaths.upload);
           }}
-          onResumeActiveCase={() => {
-            navigate(resumeActiveCasePath);
-          }}
         />
       );
     }
@@ -382,8 +373,6 @@ function App() {
       return (
         <CaseBuilderPage
           draft={caseDraft}
-          journeyContext={journeyContext}
-          recentCases={recentCases}
           activeStep={caseBuilderStep}
           supportedInputMethods={supportedInputMethods}
           futureInputMethods={futureInputMethodCards}
@@ -394,7 +383,9 @@ function App() {
               includeExplanation: !currentDraft.includeExplanation,
             }));
           }}
-          onSelectStep={setCaseBuilderStep}
+          onPreviousStep={() => {
+            setCaseBuilderStep((currentStep) => Math.max(currentStep - 1, 0));
+          }}
           onSaveAndExit={() => {
             setRecentCases((currentCases) =>
               upsertRecentCase(currentCases, {

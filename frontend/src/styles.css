@@ -993,6 +993,19 @@ strong {
   max-width: 420px;
 }
 
+.dashboard-panel-actions {
+  display: flex;
+  gap: 12px;
+  align-items: end;
+}
+
+.dashboard-new-case-button {
+  min-height: 40px;
+  padding-inline: 14px;
+  font-size: 0.92rem;
+  white-space: nowrap;
+}
+
 .dashboard-summary-strip {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
@@ -1114,6 +1127,12 @@ strong {
   text-transform: uppercase;
 }
 
+.builder-step-link.is-active,
+.builder-step-link.is-active span,
+.builder-step-link.is-active strong {
+  color: #f8fafc;
+}
+
 .builder-toggle-card {
   display: grid;
   gap: 10px;
@@ -1124,9 +1143,23 @@ strong {
   background: rgba(246, 246, 246, 0.75);
 }
 
-.builder-recent-cases {
-  display: grid;
-  gap: 16px;
+.builder-actions {
+  align-items: center;
+}
+
+.builder-quiet-action {
+  min-height: 36px;
+  padding-inline: 0;
+  border-color: transparent;
+  background: transparent;
+  box-shadow: none;
+  color: var(--text-secondary);
+}
+
+.builder-quiet-action:hover {
+  background: transparent;
+  color: var(--text-primary);
+  transform: none;
 }
 
 .builder-form-panel {
@@ -1592,6 +1625,16 @@ strong {
   .reference-footer-cta {
     flex-direction: column;
     align-items: start;
+  }
+
+  .dashboard-panel-actions {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .dashboard-panel-actions .search-input {
+    max-width: none;
+    width: 100%;
   }
 
   .workspace-page-status {

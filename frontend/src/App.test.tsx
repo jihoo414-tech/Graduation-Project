@@ -133,6 +133,7 @@ describe('App', () => {
     expect(screen.queryByRole('button', { name: /new case/i })).not.toBeInTheDocument();
     expect(screen.queryByText(/quick guide|업무 시작 흐름/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/active clinical demo session/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/continue active case|활성 케이스 이어서 보기/i)).not.toBeInTheDocument();
   });
 
   it('starts with an empty recent-case list and only shows cases created in-session', async () => {
@@ -160,15 +161,6 @@ describe('App', () => {
     expectSummaryCardValue(/open cases/i, '1');
     expectSummaryCardValue(/review queue/i, '0');
     expectSummaryCardValue(/explanation ready/i, '0');
-
-    fireEvent.click(screen.getByRole('button', { name: /cases/i }));
-
-    const previousCasesSection = (await screen.findByRole('heading', { name: /이전에 작업한 케이스/i })).closest(
-      'section',
-    );
-
-    expect(previousCasesSection).not.toBeNull();
-    expect(within(previousCasesSection as HTMLElement).getByText(/LUAD-2026-001/i)).toBeInTheDocument();
   });
 
   it('opens the same case-builder screen from the cases nav and the new-case CTA', async () => {
@@ -180,10 +172,40 @@ describe('App', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /cases/i }));
     expect(await screen.findByRole('heading', { name: /새 케이스 생성/i })).toBeInTheDocument();
+    expect(screen.queryByText(/한 번에 긴 폼을 몰아넣지 않고/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/현재 워크플로우/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/이전에 작업한 케이스/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/active step/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/^step 1$/i)).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: /dashboard/i }));
-    fireEvent.click(screen.getByRole('button', { name: /새 케이스 시작/i }));
+    fireEvent.click(screen.getByRole('button', { name: /^새 케이스$/i }));
     expect(await screen.findByRole('heading', { name: /새 케이스 생성/i })).toBeInTheDocument();
+    expect(screen.queryByText(/한 번에 긴 폼을 몰아넣지 않고/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/현재 워크플로우/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/이전에 작업한 케이스/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/active step/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/^step 1$/i)).not.toBeInTheDocument();
+  });
+
+  it('allows moving back to the previous stage in the cases flow', async () => {
+    mockFetch();
+
+    render(<App />);
+
+    expect(await screen.findByRole('heading', { name: /로그인 후 첫 화면/i })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /cases/i }));
+
+    expect(screen.getByLabelText(/케이스 ID/i)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /이전 단계/i })).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /다음 단계/i }));
+    expect(await screen.findByLabelText(/데이터 입력 방식/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /이전 단계/i })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /이전 단계/i }));
+    expect(await screen.findByLabelText(/케이스 ID/i)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /이전 단계/i })).not.toBeInTheDocument();
   });
 
   it('renders backend success results after upload', async () => {
@@ -276,7 +298,7 @@ describe('App', () => {
     await goToDashboardFromDemoRequest();
 
     expect(screen.getByText(/최근 분석한 케이스/i)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /새 케이스 시작/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^새 케이스$/i })).toBeInTheDocument();
     expect(screen.getByRole('searchbox', { name: /최근 케이스 검색/i })).toBeInTheDocument();
     expect(screen.getByText(/아직 직접 입력하거나 실행한 케이스가 없습니다/i)).toBeInTheDocument();
   });

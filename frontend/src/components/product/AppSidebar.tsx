@@ -69,7 +69,7 @@ export function AppSidebar({
 
       <div className="app-sidebar-footer">
         <strong>{clinicianName}</strong>
-        <span>{journeyContext.caseId} · {journeyContext.nextStepLabel}</span>
+        <span>{journeyContext.caseId}</span>
         <button type="button" className="secondary-button" onClick={onLogout}>
           로그아웃
         </button>

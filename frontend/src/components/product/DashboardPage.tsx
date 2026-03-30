@@ -14,7 +14,6 @@ type DashboardPageProps = {
   journeyContext: JourneyContext;
   onStartCase: MouseEventHandler<HTMLButtonElement>;
   onRunSampleCase: MouseEventHandler<HTMLButtonElement>;
-  onResumeActiveCase: MouseEventHandler<HTMLButtonElement>;
 };
 
 const statusClassByLabel: Record<CaseStatus, string> = {
@@ -32,7 +31,6 @@ export function DashboardPage({
   journeyContext,
   onStartCase,
   onRunSampleCase,
-  onResumeActiveCase,
 }: DashboardPageProps) {
   const reviewQueueCount = cases.filter(
     (caseItem) => caseItem.status === '의사 검토 필요' || caseItem.status === '추가 입력 확인 필요',
@@ -52,9 +50,6 @@ export function DashboardPage({
           <h1>로그인 후 첫 화면: 바로 업무를 시작하는 대시보드</h1>
           <p>최근 케이스, 빠른 시작, 샘플 실행을 한 시선 안에 묶어 바로 업무를 시작하게 구성했습니다.</p>
         </div>
-        <button type="button" className="primary-button" onClick={onStartCase}>
-          새 케이스 시작
-        </button>
       </div>
 
       <section className="dashboard-summary-strip">
@@ -79,12 +74,17 @@ export function DashboardPage({
               <p className="marketing-kicker">Recent cases</p>
               <h2>최근 분석한 케이스</h2>
             </div>
-            <input
-              className="search-input"
-              type="search"
-              placeholder="최근 케이스 검색"
-              aria-label="최근 케이스 검색"
-            />
+            <div className="dashboard-panel-actions">
+              <input
+                className="search-input"
+                type="search"
+                placeholder="최근 케이스 검색"
+                aria-label="최근 케이스 검색"
+              />
+              <button type="button" className="secondary-button dashboard-new-case-button" onClick={onStartCase}>
+                새 케이스
+              </button>
+            </div>
           </div>
 
           {cases.length > 0 ? (
@@ -110,15 +110,6 @@ export function DashboardPage({
         </section>
 
         <aside className="dashboard-side-panel">
-          <article className="dashboard-side-card">
-            <p className="marketing-kicker">Continue active case</p>
-            <h3>{journeyContext.caseId}</h3>
-            <p>{journeyContext.stageSummary}</p>
-            <button type="button" className="secondary-button" onClick={onResumeActiveCase}>
-              활성 케이스 이어서 보기
-            </button>
-          </article>
-
           <article className="dashboard-side-card">
             <p className="marketing-kicker">Sample run</p>
             <h3>샘플 케이스</h3>
