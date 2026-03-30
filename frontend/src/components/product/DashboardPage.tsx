@@ -26,12 +26,6 @@ const statusClassByLabel: Record<CaseStatus, string> = {
   '추가 입력 확인 필요': 'review',
 };
 
-const summaryCards = [
-  { label: 'Open cases', value: '12', meta: '오늘 업데이트 3건' },
-  { label: 'Review queue', value: '04', meta: '의사 검토 필요' },
-  { label: 'Explanation ready', value: '07', meta: '상담 문장 생성 완료' },
-];
-
 export function DashboardPage({
   cases,
   session,
@@ -40,6 +34,16 @@ export function DashboardPage({
   onRunSampleCase,
   onResumeActiveCase,
 }: DashboardPageProps) {
+  const reviewQueueCount = cases.filter(
+    (caseItem) => caseItem.status === '의사 검토 필요' || caseItem.status === '추가 입력 확인 필요',
+  ).length;
+  const explanationReadyCount = cases.filter((caseItem) => caseItem.status === '설명 준비 완료').length;
+  const summaryCards = [
+    { label: 'Open cases', value: String(cases.length), meta: `최근 목록 기준 ${cases.length}건` },
+    { label: 'Review queue', value: String(reviewQueueCount), meta: '의사 검토 필요' },
+    { label: 'Explanation ready', value: String(explanationReadyCount), meta: '상담 문장 생성 완료' },
+  ];
+
   return (
     <main className="product-shell">
       <div className="product-page-header">
@@ -52,15 +56,6 @@ export function DashboardPage({
           새 케이스 시작
         </button>
       </div>
-
-      <section className="dashboard-topbar">
-        <input
-          className="search-input"
-          type="search"
-          placeholder="최근 케이스 검색"
-          aria-label="최근 케이스 검색"
-        />
-      </section>
 
       <section className="dashboard-summary-strip">
         {summaryCards.map((card) => (
@@ -84,39 +79,37 @@ export function DashboardPage({
               <p className="marketing-kicker">Recent cases</p>
               <h2>최근 분석한 케이스</h2>
             </div>
-            <button type="button" className="secondary-button" onClick={onRunSampleCase}>
-              샘플 케이스 실행
-            </button>
+            <input
+              className="search-input"
+              type="search"
+              placeholder="최근 케이스 검색"
+              aria-label="최근 케이스 검색"
+            />
           </div>
 
-          <div className="case-list">
-            {cases.map((caseItem) => (
-              <article key={caseItem.id} className="case-list-item">
-                <div>
-                  <strong>{caseItem.id}</strong>
-                  <p>{caseItem.cancerType}</p>
-                </div>
-                <div className="case-list-meta">
-                  <span className={`status-badge status-${statusClassByLabel[caseItem.status]}`}>
-                    {caseItem.status}
-                  </span>
-                  <small>{caseItem.updatedAt}</small>
-                </div>
-              </article>
-            ))}
-          </div>
+          {cases.length > 0 ? (
+            <div className="case-list">
+              {cases.map((caseItem) => (
+                <article key={caseItem.id} className="case-list-item">
+                  <div>
+                    <strong>{caseItem.id}</strong>
+                    <p>{caseItem.cancerType}</p>
+                  </div>
+                  <div className="case-list-meta">
+                    <span className={`status-badge status-${statusClassByLabel[caseItem.status]}`}>
+                      {caseItem.status}
+                    </span>
+                    <small>{caseItem.updatedAt}</small>
+                  </div>
+                </article>
+              ))}
+            </div>
+          ) : (
+            <p className="muted-text">아직 직접 입력하거나 실행한 케이스가 없습니다.</p>
+          )}
         </section>
 
         <aside className="dashboard-side-panel">
-          <article className="dashboard-side-card">
-            <p className="marketing-kicker">Quick guide</p>
-            <h3>업무 시작 흐름</h3>
-            <ul className="detail-list">
-              <li>새 케이스 시작 → 환자/검사 정보 입력 → 분석 실행</li>
-              <li>결과 탭에서 요약 / 근거 / 환자 설명 / 리포트를 확인합니다.</li>
-            </ul>
-          </article>
-
           <article className="dashboard-side-card">
             <p className="marketing-kicker">Continue active case</p>
             <h3>{journeyContext.caseId}</h3>

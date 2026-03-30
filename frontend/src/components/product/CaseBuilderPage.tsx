@@ -1,9 +1,10 @@
 import type { ChangeEventHandler, MouseEventHandler } from 'react';
-import type { CaseDraft, JourneyContext, SupportedInputMethod } from '../../lib/demoJourney';
+import type { CaseDraft, JourneyContext, RecentCase, SupportedInputMethod } from '../../lib/demoJourney';
 
 type CaseBuilderPageProps = {
   draft: CaseDraft;
   journeyContext: JourneyContext;
+  recentCases: RecentCase[];
   activeStep: number;
   supportedInputMethods: readonly SupportedInputMethod[];
   futureInputMethods: readonly { label: string; note: string }[];
@@ -26,6 +27,7 @@ const stepNotes = [
 export function CaseBuilderPage({
   draft,
   journeyContext,
+  recentCases,
   activeStep,
   supportedInputMethods,
   futureInputMethods,
@@ -48,6 +50,30 @@ export function CaseBuilderPage({
           <strong>{journeyContext.nextStepLabel}</strong>
         </div>
       </div>
+
+      {recentCases.length > 0 ? (
+        <section className="workspace-info-card builder-recent-cases">
+          <div>
+            <p className="marketing-kicker">Previous cases</p>
+            <h2>이전에 작업한 케이스</h2>
+          </div>
+
+          <div className="case-list">
+            {recentCases.map((caseItem) => (
+              <article key={caseItem.id} className="case-list-item">
+                <div>
+                  <strong>{caseItem.id}</strong>
+                  <p>{caseItem.cancerType}</p>
+                </div>
+                <div className="case-list-meta">
+                  <small>{caseItem.status}</small>
+                  <small>{caseItem.updatedAt}</small>
+                </div>
+              </article>
+            ))}
+          </div>
+        </section>
+      ) : null}
 
       <div className="builder-layout">
         <aside className="builder-step-nav">

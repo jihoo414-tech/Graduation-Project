@@ -133,26 +133,7 @@ export const defaultCaseDraft: CaseDraft = {
   includeExplanation: true,
 };
 
-export const initialRecentCases: RecentCase[] = [
-  {
-    id: 'LUAD-2026-0008',
-    cancerType: 'LUAD',
-    updatedAt: '오늘 14:10',
-    status: '분석 완료',
-  },
-  {
-    id: 'LUAD-2026-0007',
-    cancerType: 'LUAD',
-    updatedAt: '오늘 11:20',
-    status: '의사 검토 필요',
-  },
-  {
-    id: 'LUAD-2026-0006',
-    cancerType: 'LUAD',
-    updatedAt: '어제 17:40',
-    status: '설명 준비 완료',
-  },
-];
+export const initialRecentCases: RecentCase[] = [];
 
 export const defaultDemoSession: DemoSession = {
   clinicianName: '김메드',
@@ -164,7 +145,15 @@ export const defaultDemoSession: DemoSession = {
   entryPoint: 'landing',
 };
 
-export const normalizePathname = (pathname: string) => (pathname.trim() === '' ? '/' : pathname);
+export const normalizePathname = (pathname: string) => {
+  const trimmedPathname = pathname.trim();
+
+  if (trimmedPathname === '' || trimmedPathname === '/') {
+    return '/dashboard';
+  }
+
+  return trimmedPathname;
+};
 
 export const buildCasePaths = (caseId: string) => ({
   upload: `/cases/${caseId}/upload`,

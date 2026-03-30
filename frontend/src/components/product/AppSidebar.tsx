@@ -4,6 +4,9 @@ import type { JourneyContext } from '../../lib/demoJourney';
 type SidebarItem = {
   label: string;
   path: string;
+  activePath?: string;
+  disabled?: boolean;
+  onClick?: () => void;
 };
 
 type AppSidebarProps = {
@@ -40,24 +43,31 @@ export function AppSidebar({
       </div>
 
       <nav className="app-sidebar-nav" aria-label="주요 메뉴">
-        {items.map((item) => (
-          <button
-            key={`${item.label}-${item.path}`}
-            type="button"
-            className={`app-sidebar-link ${activePath === item.path ? 'is-active' : ''}`}
-            onClick={() => onNavigate(item.path)}
-          >
-            <span>{item.label}</span>
-            <small>{activePath === item.path ? 'Current' : 'Open'}</small>
-          </button>
-        ))}
+        {items.map((item) => {
+          const isActive = activePath === (item.activePath ?? item.path);
+
+          return (
+            <button
+              key={`${item.label}-${item.path}`}
+              type="button"
+              className={`app-sidebar-link ${isActive ? 'is-active' : ''}`}
+              disabled={item.disabled}
+              onClick={() => {
+                if (item.onClick) {
+                  item.onClick();
+                  return;
+                }
+
+                onNavigate(item.path);
+              }}
+            >
+              <span>{item.label}</span>
+            </button>
+          );
+        })}
       </nav>
 
       <div className="app-sidebar-footer">
-        <div className="app-sidebar-status-pill">
-          <span className="app-sidebar-status-dot" />
-          Active clinical demo session
-        </div>
         <strong>{clinicianName}</strong>
         <span>{journeyContext.caseId} · {journeyContext.nextStepLabel}</span>
         <button type="button" className="secondary-button" onClick={onLogout}>

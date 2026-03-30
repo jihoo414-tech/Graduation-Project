@@ -1,5 +1,5 @@
 :root {
-  font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family: 'Pretendard Variable', Pretendard, 'SUIT Variable', 'Noto Sans KR', 'Apple SD Gothic Neo', 'Malgun Gothic', 'Segoe UI', sans-serif;
   color: #101828;
   background: #f6f6f6;
   line-height: 1.5;
@@ -34,6 +34,7 @@
   --radius-xl: 32px;
   --content-width: min(1360px, calc(100% - 32px));
   --mono: 'SFMono-Regular', 'JetBrains Mono', 'IBM Plex Mono', Consolas, monospace;
+  --soft-sans: 'Pretendard Variable', Pretendard, 'SUIT Variable', 'Noto Sans KR', 'Apple SD Gothic Neo', 'Malgun Gothic', 'Segoe UI', sans-serif;
   --serif: 'Iowan Old Style', 'Palatino Linotype', 'URW Palladio L', Georgia, serif;
 }
 
@@ -481,8 +482,6 @@ strong {
 .input-review-panel,
 .report-document,
 .inline-success-card,
-.preview-card,
-.result-card,
 .builder-progress-card,
 .analysis-step-card,
 .case-list-item,
@@ -508,8 +507,6 @@ strong {
 .workspace-inline-output,
 .report-document,
 .inline-success-card,
-.preview-card,
-.result-card,
 .builder-progress-card,
 .analysis-step-card,
 .workspace-timepoint-card {
@@ -617,9 +614,6 @@ strong {
 .workspace-factor-list,
 .workspace-action-bar,
 .summary-list,
-.artifact-grid,
-.preview-grid,
-.result-grid,
 .workspace-timepoint-grid,
 .workspace-panel-grid,
 .workspace-top-summary,
@@ -995,14 +989,6 @@ strong {
   align-items: end;
 }
 
-.dashboard-topbar {
-  padding: 18px 22px;
-  border-radius: var(--radius-lg);
-  border: 1px solid var(--border);
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.88), rgba(246, 246, 246, 0.88));
-  box-shadow: var(--shadow-soft);
-}
-
 .search-input {
   max-width: 420px;
 }
@@ -1138,6 +1124,11 @@ strong {
   background: rgba(246, 246, 246, 0.75);
 }
 
+.builder-recent-cases {
+  display: grid;
+  gap: 16px;
+}
+
 .builder-form-panel {
   padding: 24px;
   border-radius: var(--radius-xl);
@@ -1229,10 +1220,7 @@ strong {
 .workspace-panel-grid,
 .workspace-action-bar,
 .summary-list,
-.workspace-factor-list,
-.artifact-grid,
-.preview-grid,
-.result-grid {
+.workspace-factor-list {
   gap: 16px;
 }
 
@@ -1241,8 +1229,6 @@ strong {
 .workspace-info-card,
 .workspace-review-notes,
 .workspace-inline-output,
-.result-card,
-.preview-card,
 .report-document,
 .workspace-timepoint-card {
   min-width: 0;
@@ -1250,7 +1236,6 @@ strong {
 
 .workspace-summary-card strong,
 .workspace-panel-card dd,
-.result-card dd,
 .workspace-timepoint-card strong {
   font-size: 1.4rem;
   line-height: 1.1;
@@ -1261,9 +1246,7 @@ strong {
 .workspace-summary-card h3,
 .workspace-panel-card h3,
 .workspace-info-card h2,
-.workspace-review-notes h3,
-.result-card h3,
-.preview-card h3 {
+.workspace-review-notes h3 {
   margin: 0;
   font-size: 1.05rem;
 }
@@ -1298,14 +1281,11 @@ strong {
   gap: 18px;
 }
 
-.workspace-panel-grid.three-col,
-.result-grid {
+.workspace-panel-grid.three-col {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
 .workspace-panel-grid .wide-card,
-.result-card,
-.preview-card,
 .workspace-inline-output,
 .report-document {
   grid-column: 1 / -1;
@@ -1472,20 +1452,6 @@ strong {
   border-top: 1px solid rgba(16, 24, 40, 0.08);
 }
 
-.preview-grid,
-.result-grid,
-.artifact-grid {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-
-.preview-card,
-.result-card,
-.contract-helper,
-.artifact-placeholder {
-  display: grid;
-  gap: 14px;
-}
-
 .workspace-inline-output abbr {
   text-decoration: underline dotted;
   text-decoration-color: rgba(16, 24, 40, 0.3);
@@ -1531,17 +1497,12 @@ strong {
   padding-inline: 16px;
 }
 
-.app-sidebar-link span,
-.app-sidebar-link small {
-  color: inherit;
+.app-sidebar-link:disabled:hover {
+  transform: none;
 }
 
-.app-sidebar-link small {
-  font-family: var(--mono);
-  font-size: 0.72rem;
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
-  opacity: 0.72;
+.app-sidebar-link span {
+  color: inherit;
 }
 
 .app-sidebar-footer {
@@ -1549,26 +1510,6 @@ strong {
   gap: 12px;
   padding-top: 10px;
   border-top: 1px solid rgba(16, 24, 40, 0.08);
-}
-
-.app-sidebar-status-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  width: fit-content;
-  padding: 8px 12px;
-  border-radius: 999px;
-  border: 1px solid var(--border);
-  background: rgba(246, 246, 246, 0.84);
-  color: var(--text-secondary);
-  font-size: 0.84rem;
-}
-
-.app-sidebar-status-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 999px;
-  background: #111111;
 }
 
 .error-panel {
@@ -1632,10 +1573,7 @@ strong {
   .workspace-action-bar,
   .summary-list,
   .dashboard-summary-strip,
-  .workspace-factor-list,
-  .preview-grid,
-  .result-grid,
-  .artifact-grid {
+  .workspace-factor-list {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
@@ -1696,9 +1634,6 @@ strong {
   .summary-list,
   .dashboard-summary-strip,
   .workspace-factor-list,
-  .preview-grid,
-  .result-grid,
-  .artifact-grid,
   .builder-form-grid,
   .demo-request-form,
   .reference-window-summary,
@@ -1762,13 +1697,10 @@ strong {
 .input-review-panel,
 .report-document,
 .inline-success-card,
-.preview-card,
-.result-card,
 .builder-progress-card,
 .case-list-item,
 .workspace-timepoint-card,
 .builder-form-panel,
-.dashboard-topbar,
 .workspace-page-status,
 .reference-proof-card,
 .reference-trust-card,
@@ -1806,13 +1738,10 @@ strong {
 .input-review-panel,
 .report-document,
 .inline-success-card,
-.preview-card,
-.result-card,
 .builder-progress-card,
 .case-list-item,
 .workspace-timepoint-card,
 .builder-form-panel,
-.dashboard-topbar,
 .workspace-page-status,
 .reference-proof-card,
 .reference-trust-card,
@@ -1859,13 +1788,10 @@ strong {
 .input-review-panel,
 .report-document,
 .inline-success-card,
-.preview-card,
-.result-card,
 .builder-progress-card,
 .case-list-item,
 .workspace-timepoint-card,
 .builder-form-panel,
-.dashboard-topbar,
 .workspace-page-status,
 .reference-proof-card,
 .reference-trust-card,
@@ -1902,13 +1828,10 @@ strong {
 .input-review-panel,
 .report-document,
 .inline-success-card,
-.preview-card,
-.result-card,
 .builder-progress-card,
 .case-list-item,
 .workspace-timepoint-card,
 .builder-form-panel,
-.dashboard-topbar,
 .workspace-page-status,
 .reference-proof-card,
 .reference-trust-card,
@@ -1934,8 +1857,6 @@ strong {
 .input-review-panel,
 .report-document,
 .inline-success-card,
-.preview-card,
-.result-card,
 .builder-progress-card,
 .case-list-item,
 .workspace-timepoint-card,
@@ -1967,4 +1888,50 @@ strong {
     padding-inline: 0;
     border-radius: 0;
   }
+}
+
+
+/* Softer global type pass */
+body,
+button,
+input,
+textarea,
+select,
+a {
+  font-family: var(--soft-sans);
+}
+
+.section-heading h2,
+.reference-stage-header h2,
+.reference-footer-cta h2,
+.reference-hero-copy h1,
+.reference-hero-aside h2,
+.workspace-page-header h1,
+.product-page-header h1,
+.demo-request-form-panel h1 {
+  font-weight: 450;
+  letter-spacing: -0.035em;
+}
+
+h2,
+h3,
+h4,
+strong {
+  font-weight: 550;
+}
+
+.marketing-kicker,
+.workspace-page-kicker,
+.reference-rail-item span,
+.reference-metric-card span,
+.reference-chart-copy span,
+.reference-preview-card > span,
+.dashboard-summary-tile span,
+.workspace-timepoint-card span {
+  letter-spacing: 0.12em;
+}
+
+.reference-accent-word {
+  font-weight: 400;
+  font-style: italic;
 }

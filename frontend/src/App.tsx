@@ -30,17 +30,13 @@ import {
   normalizePathname,
   supportedInputMethods,
   upsertRecentCase,
+  type ActionFeedback,
   type CaseDraft,
   type DemoRequestFormValues,
   type ViewState,
 } from './lib/demoJourney';
 import type { ContractExamplesResponse, ResultEnvelope } from './lib/types';
 import { buildClinicianSummary, buildPatientFriendlySummary } from './lib/workspace';
-
-type ActionFeedback = {
-  tone: 'success' | 'info';
-  message: string;
-};
 
 const downloadText = (filename: string, content: string, mimeType: string) => {
   const blob = new Blob([content], { type: mimeType });
@@ -139,6 +135,14 @@ function App() {
   const notifyAction = (message: string, tone: ActionFeedback['tone'] = 'success') => {
     setActionFeedback({ tone, message });
   };
+
+  useEffect(() => {
+    const normalizedPath = normalizePathname(window.location.pathname);
+
+    if (normalizedPath !== window.location.pathname) {
+      window.history.replaceState({}, '', normalizedPath);
+    }
+  }, []);
 
   useEffect(() => {
     const handlePopState = () => {
@@ -242,12 +246,12 @@ function App() {
     setActionFeedback(null);
   };
 
-  const resetToLanding = () => {
+  const resetToDashboard = () => {
     resetCaseFlow();
     setCaseBuilderStep(0);
     setCaseDraft(defaultCaseDraft);
     setSession(defaultDemoSession);
-    navigate('/');
+    navigate('/dashboard');
   };
 
   const selectedFileLabel = useMemo(() => {
@@ -295,7 +299,7 @@ function App() {
 
     setCaseDraft((currentDraft) => ({
       ...currentDraft,
-      [name]: name === 'inputMethod' ? value : value,
+      [name]: value,
     } as CaseDraft));
   };
 
@@ -312,26 +316,27 @@ function App() {
     notifyAction(`${formValues.organization} 세션으로 데모 진입 정보를 저장했습니다.`);
   };
 
+  const openCaseBuilder = () => {
+    setCaseBuilderStep(0);
+    setCaseDraft((currentDraft) => ({ ...currentDraft, inputMethod: 'CSV/JSON 업로드' }));
+    navigate('/cases/new');
+  };
+
   const sidebarItems = [
     { label: 'Dashboard', path: '/dashboard' },
-    { label: 'New Case', path: '/cases/new' },
-    { label: 'Cases', path: result ? casePaths.result : casePaths.upload },
-    { label: 'Reports', path: result ? casePaths.report : '/dashboard' },
+    { label: 'Cases', path: '/cases/new', activePath: '/cases', onClick: openCaseBuilder },
+    { label: 'Reports', path: casePaths.report, activePath: casePaths.report, disabled: !result },
     { label: 'Settings', path: '/settings' },
   ];
 
   const activeSidebarPath =
-    pathname === '/cases/new'
-      ? '/cases/new'
-      : pathname === '/dashboard'
-        ? '/dashboard'
-        : pathname === '/settings'
-          ? '/settings'
-          : pathname === casePaths.report
-            ? casePaths.report
-            : pathname === casePaths.result || pathname === casePaths.explanation
-              ? casePaths.result
-              : casePaths.upload;
+    pathname === '/dashboard'
+      ? '/dashboard'
+      : pathname === '/settings'
+        ? '/settings'
+        : pathname === casePaths.report
+          ? casePaths.report
+          : '/cases';
 
   const resumeActiveCasePath = result
     ? casePaths.result
@@ -360,11 +365,7 @@ function App() {
           cases={recentCases}
           session={session}
           journeyContext={journeyContext}
-          onStartCase={() => {
-            setCaseBuilderStep(0);
-            setCaseDraft((currentDraft) => ({ ...currentDraft, inputMethod: 'CSV/JSON 업로드' }));
-            navigate('/cases/new');
-          }}
+          onStartCase={openCaseBuilder}
           onRunSampleCase={() => {
             resetCaseFlow();
             setCaseDraft((currentDraft) => ({ ...currentDraft, inputMethod: '샘플 데이터로 테스트' }));
@@ -382,6 +383,7 @@ function App() {
         <CaseBuilderPage
           draft={caseDraft}
           journeyContext={journeyContext}
+          recentCases={recentCases}
           activeStep={caseBuilderStep}
           supportedInputMethods={supportedInputMethods}
           futureInputMethods={futureInputMethodCards}
@@ -612,7 +614,7 @@ function App() {
 
   return (
     <div className="app-shell">
-      {pathname === '/' ? (
+      {pathname === '/landing' ? (
         <LandingPage
           onRequestDemo={() => {
             navigate('/demo-request');
@@ -628,7 +630,7 @@ function App() {
         <DemoRequestPage
           defaultValues={session}
           onBack={() => {
-            navigate('/');
+            navigate('/dashboard');
           }}
           onSubmitRequest={handleDemoRequestSubmit}
           onContinueToDashboard={() => {
@@ -637,7 +639,7 @@ function App() {
         />
       ) : null}
 
-      {pathname !== '/' && pathname !== '/demo-request' ? (
+      {pathname !== '/landing' && pathname !== '/demo-request' ? (
         <div className="authenticated-layout">
           <AppSidebar
             activePath={activeSidebarPath}
@@ -648,7 +650,7 @@ function App() {
               navigate(nextPath);
             }}
             onLogout={() => {
-              resetToLanding();
+              resetToDashboard();
             }}
           />
           <div className="authenticated-content">{renderAuthenticatedPage()}</div>
