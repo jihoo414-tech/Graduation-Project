@@ -6,6 +6,7 @@ import { LandingPage } from './components/marketing/LandingPage';
 import { AppSidebar } from './components/product/AppSidebar';
 import { AnalyzingPage } from './components/product/AnalyzingPage';
 import { CaseBuilderPage } from './components/product/CaseBuilderPage';
+import { CasesPage } from './components/product/CasesPage';
 import { DashboardPage } from './components/product/DashboardPage';
 import { ExplanationPage } from './components/product/ExplanationPage';
 import { ReportPage } from './components/product/ReportPage';
@@ -424,9 +425,18 @@ function App() {
     navigate('/cases/new');
   };
 
+  const openCasesHome = () => {
+    if (recentCases.length > 0) {
+      navigate('/cases');
+      return;
+    }
+
+    openCaseBuilder();
+  };
+
   const sidebarItems = [
     { label: 'Dashboard', path: '/dashboard' },
-    { label: 'Cases', path: '/cases/new', activePath: '/cases', onClick: openCaseBuilder },
+    { label: 'Cases', path: '/cases', activePath: '/cases', onClick: openCasesHome },
     { label: 'Reports', path: casePaths.report, activePath: casePaths.report, disabled: !result },
     { label: 'Settings', path: '/settings' },
   ];
@@ -439,6 +449,15 @@ function App() {
         : pathname === casePaths.report
           ? casePaths.report
           : '/cases';
+
+  const resumeCasePath =
+    pathname.startsWith('/cases/') && pathname !== '/cases/new'
+      ? pathname
+      : result
+        ? casePaths.result
+        : selectedFile || viewState !== 'idle'
+          ? casePaths.upload
+          : '/cases/new';
 
   const renderSettingsPage = () => (
     <main className="product-shell">
@@ -476,7 +495,23 @@ function App() {
       );
     }
 
-    if (pathname === '/cases/new') {
+    if (pathname === '/cases' && recentCases.length > 0) {
+      return (
+        <CasesPage
+          cases={recentCases}
+          searchQuery={searchQuery}
+          onSearchChange={(event) => {
+            setSearchQuery(event.target.value);
+          }}
+          onResumeActiveCase={() => {
+            navigate(resumeCasePath);
+          }}
+          onCreateNewCase={openCaseBuilder}
+        />
+      );
+    }
+
+    if (pathname === '/cases/new' || (pathname === '/cases' && recentCases.length === 0)) {
       return (
         <CaseBuilderPage
           draft={caseDraft}

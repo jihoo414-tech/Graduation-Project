@@ -185,6 +185,23 @@ describe('App', () => {
     expectSummaryCardValue(/explanation ready/i, '0');
   });
 
+  it('opens the cases list instead of the new-case form when prior cases exist', async () => {
+    mockFetch();
+
+    render(<App />);
+
+    await uploadPatientFileAndReachResult();
+    fireEvent.click(screen.getByRole('button', { name: /cases/i }));
+
+    expect(await screen.findByRole('heading', { name: /이전에 생성한 케이스/i })).toBeInTheDocument();
+    expect(screen.getByText(/최근 생성한 케이스/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/LUAD-2026-001/i).length).toBeGreaterThan(0);
+    expect(screen.queryByRole('heading', { name: /새 케이스 생성/i })).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /현재 케이스 열기/i }));
+    expect(await screen.findByRole('heading', { name: /결과 대시보드/i })).toBeInTheDocument();
+  });
+
   it('opens the same case-builder screen from the cases nav and the new-case CTA', async () => {
     mockFetch();
 
