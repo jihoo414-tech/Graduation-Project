@@ -41,16 +41,6 @@ export type DemoSession = {
   email: string;
   requestGoal: string;
   note: string;
-  entryPoint: 'landing' | 'demo-request';
-};
-
-export type DemoRequestFormValues = {
-  clinicianName: string;
-  organization: string;
-  specialty: string;
-  email: string;
-  requestGoal: string;
-  note: string;
 };
 
 export type DemoStage =
@@ -144,7 +134,6 @@ export const defaultDemoSession: DemoSession = {
   email: 'doctor@example.com',
   requestGoal: '암 진단 결과 해석 및 환자 설명 지원',
   note: '재발 위험 해석과 환자 설명 생성 데모를 확인하고 싶습니다.',
-  entryPoint: 'landing',
 };
 
 export const defaultReportStage: ReportStage = 'draft';
@@ -158,7 +147,12 @@ export const reportStageLabels: Record<ReportStage, string> = {
 export const normalizePathname = (pathname: string) => {
   const trimmedPathname = pathname.trim();
 
-  if (trimmedPathname === '' || trimmedPathname === '/') {
+  if (
+    trimmedPathname === '' ||
+    trimmedPathname === '/' ||
+    trimmedPathname === '/landing' ||
+    trimmedPathname === '/demo-request'
+  ) {
     return '/dashboard';
   }
 

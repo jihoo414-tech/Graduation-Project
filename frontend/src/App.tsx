@@ -1,8 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { ChangeEvent, FormEvent } from 'react';
 import { ErrorAlert } from './components/ErrorAlert';
-import { DemoRequestPage } from './components/marketing/DemoRequestPage';
-import { LandingPage } from './components/marketing/LandingPage';
 import { AppSidebar } from './components/product/AppSidebar';
 import { AnalyzingPage } from './components/product/AnalyzingPage';
 import { CaseBuilderPage } from './components/product/CaseBuilderPage';
@@ -33,7 +31,6 @@ import {
   upsertRecentCase,
   type ActionFeedback,
   type CaseDraft,
-  type DemoRequestFormValues,
   type ReportStage,
   type ViewState,
 } from './lib/demoJourney';
@@ -75,6 +72,11 @@ const getClientUploadError = (file: File) => {
   return null;
 };
 
+const buildSamplePatientFile = (contractExamples: ContractExamplesResponse) =>
+  new File([JSON.stringify(contractExamples.json_example, null, 2)], 'sample-patient.json', {
+    type: 'application/json',
+  });
+
 const downloadText = (filename: string, content: string, mimeType: string) => {
   const blob = new Blob([content], { type: mimeType });
   const url = URL.createObjectURL(blob);
@@ -98,7 +100,7 @@ const saveWorkspaceSnapshotAsImage = (result: ResultEnvelope) => {
   context.fillStyle = '#ffffff';
   context.fillRect(0, 0, canvas.width, canvas.height);
 
-  context.fillStyle = '#27272a';
+  context.fillStyle = '#111111';
   context.fillRect(60, 60, 1280, 180);
 
   context.fillStyle = '#ffffff';
@@ -107,7 +109,7 @@ const saveWorkspaceSnapshotAsImage = (result: ResultEnvelope) => {
   context.font = '28px Inter, system-ui, sans-serif';
   context.fillText(`환자 ID ${result.patient.deidentified_patient_id}`, 96, 190);
 
-  context.fillStyle = '#0f172a';
+  context.fillStyle = '#111111';
   context.font = 'bold 34px Inter, system-ui, sans-serif';
   context.fillText(`위험군: ${result.result.summary.risk_level}`, 96, 320);
   context.fillText(`위험 점수: ${result.result.summary.risk_score.toFixed(2)}`, 96, 372);
@@ -293,8 +295,7 @@ function App() {
       return;
     }
 
-    const sampleContent = JSON.stringify(contractExamples.json_example, null, 2);
-    const sampleFile = new File([sampleContent], 'sample-patient.json', { type: 'application/json' });
+    const sampleFile = buildSamplePatientFile(contractExamples);
 
     setShouldAutoUploadSample(false);
     void performUpload(sampleFile, '샘플 환자 데이터를 자동으로 업로드해 입력 검토 패널까지 준비했습니다.');
@@ -406,19 +407,6 @@ function App() {
     } as CaseDraft));
   };
 
-  const handleDemoRequestSubmit = (formValues: DemoRequestFormValues) => {
-    setSession({
-      clinicianName: formValues.clinicianName,
-      organization: formValues.organization,
-      specialty: formValues.specialty,
-      email: formValues.email,
-      requestGoal: formValues.requestGoal,
-      note: formValues.note,
-      entryPoint: 'demo-request',
-    });
-    notifyAction(`${formValues.organization} 세션으로 데모 진입 정보를 저장했습니다.`);
-  };
-
   const openCaseBuilder = () => {
     setCaseBuilderStep(0);
     setCaseDraft((currentDraft) => ({ ...currentDraft, inputMethod: 'CSV/JSON 업로드' }));
@@ -478,12 +466,6 @@ function App() {
       return (
         <DashboardPage
           cases={recentCases}
-          session={session}
-          journeyContext={journeyContext}
-          searchQuery={searchQuery}
-          onSearchChange={(event) => {
-            setSearchQuery(event.target.value);
-          }}
           onStartCase={openCaseBuilder}
           onRunSampleCase={() => {
             resetCaseFlow();
@@ -622,8 +604,7 @@ function App() {
               return;
             }
 
-            const sampleContent = JSON.stringify(contractExamples.json_example, null, 2);
-            const sampleFile = new File([sampleContent], 'sample-patient.json', { type: 'application/json' });
+            const sampleFile = buildSamplePatientFile(contractExamples);
             void performUpload(sampleFile, '샘플 환자 데이터를 업로드해 입력 검토 패널까지 준비했습니다.');
           }}
           onResetInput={() => {
@@ -752,48 +733,21 @@ function App() {
 
   return (
     <div className="app-shell">
-      {pathname === '/landing' ? (
-        <LandingPage
-          onRequestDemo={() => {
-            navigate('/demo-request');
+      <div className="authenticated-layout">
+        <AppSidebar
+          activePath={activeSidebarPath}
+          items={sidebarItems}
+          journeyContext={journeyContext}
+          clinicianName={session.clinicianName}
+          onNavigate={(nextPath) => {
+            navigate(nextPath);
           }}
-          onViewProduct={() => {
-            setSession((currentSession) => ({ ...currentSession, entryPoint: 'landing' }));
-            navigate('/dashboard');
-          }}
-        />
-      ) : null}
-
-      {pathname === '/demo-request' ? (
-        <DemoRequestPage
-          defaultValues={session}
-          onBack={() => {
-            navigate('/dashboard');
-          }}
-          onSubmitRequest={handleDemoRequestSubmit}
-          onContinueToDashboard={() => {
-            navigate('/dashboard');
+          onLogout={() => {
+            resetToDashboard();
           }}
         />
-      ) : null}
-
-      {pathname !== '/landing' && pathname !== '/demo-request' ? (
-        <div className="authenticated-layout">
-          <AppSidebar
-            activePath={activeSidebarPath}
-            items={sidebarItems}
-            journeyContext={journeyContext}
-            clinicianName={session.clinicianName}
-            onNavigate={(nextPath) => {
-              navigate(nextPath);
-            }}
-            onLogout={() => {
-              resetToDashboard();
-            }}
-          />
-          <div className="authenticated-content">{renderAuthenticatedPage()}</div>
-        </div>
-      ) : null}
+        <div className="authenticated-content">{renderAuthenticatedPage()}</div>
+      </div>
 
       {viewState === 'error' && error ? (
         <ErrorAlert code={error.code} message={error.message} details={error.details} onDismiss={dismissError} />

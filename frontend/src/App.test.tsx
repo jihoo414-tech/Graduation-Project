@@ -104,16 +104,6 @@ const goToUploadPage = async () => {
   expect(await screen.findByRole('heading', { name: /데이터 입력 \/ 업로드/i })).toBeInTheDocument();
 };
 
-const goToDashboardFromDemoRequest = async () => {
-  expect(await screen.findByRole('heading', { name: /데모 요청/i })).toBeInTheDocument();
-
-  fireEvent.click(screen.getByRole('button', { name: /데모 요청 보내기/i }));
-  expect(await screen.findByRole('button', { name: /데모 계정으로 계속/i })).toBeInTheDocument();
-
-  fireEvent.click(screen.getByRole('button', { name: /데모 계정으로 계속/i }));
-  expect(await screen.findByRole('heading', { name: /대시보드/i })).toBeInTheDocument();
-};
-
 const uploadPatientFileAndReachResult = async (file = new File(['patient'], 'patient.csv', { type: 'text/csv' })) => {
   await goToUploadPage();
 
@@ -152,19 +142,21 @@ describe('App', () => {
     expect(dashboardButton).toHaveClass('is-active');
     expect(reportsButton).not.toHaveClass('is-active');
     expect(reportsButton).toBeDisabled();
-    expect(screen.queryByRole('button', { name: /new case/i })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^새 케이스 생성$/i })).toBeInTheDocument();
     expect(screen.queryByText(/quick guide|업무 시작 흐름/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/active clinical demo session/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/continue active case|활성 케이스 이어서 보기/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/최근 분석한 케이스/i)).not.toBeInTheDocument();
   });
 
-  it('starts with an empty recent-case list and only shows cases created in-session', async () => {
+  it('keeps dashboard focused on summary cards while the case count reflects in-session work', async () => {
     mockFetch();
 
     render(<App />);
 
     expect(await screen.findByRole('heading', { name: /로그인 후 첫 화면/i })).toBeInTheDocument();
-    expect(screen.getByText(/아직 직접 입력하거나 실행한 케이스가 없습니다/i)).toBeInTheDocument();
+    expect(screen.queryByText(/아직 직접 입력하거나 실행한 케이스가 없습니다/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/최근 분석한 케이스/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/LUAD-2026-0008|LUAD-2026-0007|LUAD-2026-0006/i)).not.toBeInTheDocument();
     expectSummaryCardValue(/open cases/i, '0');
     expectSummaryCardValue(/review queue/i, '0');
@@ -172,14 +164,7 @@ describe('App', () => {
 
     await uploadPatientFileAndReachResult();
     fireEvent.click(screen.getByRole('button', { name: /dashboard/i }));
-
-    const recentCasesSection = (await screen.findByRole('heading', { name: /최근 분석한 케이스/i })).closest(
-      'section',
-    );
-
-    expect(recentCasesSection).not.toBeNull();
-    expect(within(recentCasesSection as HTMLElement).getByText(/LUAD-2026-001/i)).toBeInTheDocument();
-    expect(screen.queryByText(/아직 직접 입력하거나 실행한 케이스가 없습니다/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/최근 분석한 케이스/i)).not.toBeInTheDocument();
     expectSummaryCardValue(/open cases/i, '1');
     expectSummaryCardValue(/review queue/i, '0');
     expectSummaryCardValue(/explanation ready/i, '0');
@@ -218,7 +203,7 @@ describe('App', () => {
     expect(screen.queryByText(/^step 1$/i)).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: /dashboard/i }));
-    fireEvent.click(screen.getByRole('button', { name: /^새 케이스$/i }));
+    fireEvent.click(screen.getByRole('button', { name: /^새 케이스 생성$/i }));
     expect(await screen.findByRole('heading', { name: /새 케이스 생성/i })).toBeInTheDocument();
     expect(screen.queryByText(/한 번에 긴 폼을 몰아넣지 않고/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/현재 워크플로우/i)).not.toBeInTheDocument();
@@ -345,18 +330,18 @@ describe('App', () => {
     expect(await screen.findByText(/모델에 넣기 전 입력 검토/i)).toBeInTheDocument();
   });
 
-  it('continues from the demo request form into the dashboard workspace', async () => {
+  it.each(['/landing', '/demo-request'])('normalizes removed marketing route %s to dashboard', async (legacyPath) => {
     mockFetch();
-    window.history.replaceState({}, '', '/demo-request');
+    window.history.replaceState({}, '', legacyPath);
 
     render(<App />);
 
-    await goToDashboardFromDemoRequest();
-
-    expect(screen.getByText(/최근 분석한 케이스/i)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /^새 케이스$/i })).toBeInTheDocument();
-    expect(screen.getByRole('searchbox', { name: /최근 케이스 검색/i })).toBeInTheDocument();
-    expect(screen.getByText(/아직 직접 입력하거나 실행한 케이스가 없습니다/i)).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: /로그인 후 첫 화면/i })).toBeInTheDocument();
+    await waitFor(() => {
+      expect(window.location.pathname).toBe('/dashboard');
+    });
+    expect(screen.getByRole('button', { name: /^새 케이스 생성$/i })).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: /데모 요청/i })).not.toBeInTheDocument();
   });
 
   it('auto-uploads sample data when sample mode is selected from cases flow', async () => {
@@ -380,19 +365,19 @@ describe('App', () => {
     expect(screen.getByText(/샘플 환자 데이터를 자동으로 업로드해 입력 검토 패널까지 준비했습니다/i)).toBeInTheDocument();
   });
 
-  it('filters recent cases with the dashboard search input', async () => {
+  it('filters previous cases from the cases tab search input', async () => {
     mockFetch();
 
     render(<App />);
     await uploadPatientFileAndReachResult();
-    fireEvent.click(screen.getByRole('button', { name: /dashboard/i }));
+    fireEvent.click(screen.getByRole('button', { name: /cases/i }));
 
-    const searchInput = await screen.findByRole('searchbox', { name: /최근 케이스 검색/i });
+    const searchInput = await screen.findByRole('searchbox', { name: /케이스 검색/i });
     fireEvent.change(searchInput, { target: { value: 'NOT-FOUND' } });
 
     expect(screen.getByText(/검색어와 일치하는 케이스가 없습니다/i)).toBeInTheDocument();
     fireEvent.change(searchInput, { target: { value: 'LUAD-2026-001' } });
-    expect(screen.getByRole('searchbox', { name: /최근 케이스 검색/i })).toHaveValue('LUAD-2026-001');
+    expect(screen.getByRole('searchbox', { name: /케이스 검색/i })).toHaveValue('LUAD-2026-001');
     expect(screen.getAllByText(/LUAD-2026-001/i).length).toBeGreaterThan(0);
   });
 
@@ -402,13 +387,14 @@ describe('App', () => {
     const firstRender = render(<App />);
     await uploadPatientFileAndReachResult();
     fireEvent.click(screen.getByRole('button', { name: /dashboard/i }));
-    expect(await screen.findByRole('heading', { name: /최근 분석한 케이스/i })).toBeInTheDocument();
-    expect(screen.getAllByText(/LUAD-2026-001/i).length).toBeGreaterThan(0);
+    expectSummaryCardValue(/open cases/i, '1');
 
     firstRender.unmount();
     render(<App />);
 
-    expect(await screen.findByRole('heading', { name: /최근 분석한 케이스/i })).toBeInTheDocument();
+    expectSummaryCardValue(/open cases/i, '1');
+    fireEvent.click(screen.getByRole('button', { name: /cases/i }));
+    expect(await screen.findByRole('heading', { name: /이전에 생성한 케이스/i })).toBeInTheDocument();
     expect(screen.getAllByText(/LUAD-2026-001/i).length).toBeGreaterThan(0);
   });
 
