@@ -196,6 +196,9 @@ describe('App', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /cases/i }));
     expect(await screen.findByRole('heading', { name: /새 케이스 생성/i })).toBeInTheDocument();
+    expect(window.location.pathname).toBe('/cases/new');
+    expect(screen.queryByLabelText(/암종/i)).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/병기/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/한 번에 긴 폼을 몰아넣지 않고/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/현재 워크플로우/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/이전에 작업한 케이스/i)).not.toBeInTheDocument();
@@ -205,6 +208,9 @@ describe('App', () => {
     fireEvent.click(screen.getByRole('button', { name: /dashboard/i }));
     fireEvent.click(screen.getByRole('button', { name: /^새 케이스 생성$/i }));
     expect(await screen.findByRole('heading', { name: /새 케이스 생성/i })).toBeInTheDocument();
+    expect(window.location.pathname).toBe('/cases/new');
+    expect(screen.queryByLabelText(/암종/i)).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/병기/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/한 번에 긴 폼을 몰아넣지 않고/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/현재 워크플로우/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/이전에 작업한 케이스/i)).not.toBeInTheDocument();

@@ -35,21 +35,6 @@ CSV_ALLOWED_FIELDS = {
     "variant_classification",
     *ALLOWED_CLINICAL_FIELDS,
 }
-DEFAULT_CSV_EXAMPLE = (
-    "deidentified_patient_id,gene,variant_classification,age,pathologic_stage,gender\n"
-    "P-001,TP53,Missense_Mutation,67,IIA,female\n"
-    "P-001,EGFR,L858R,67,IIA,female"
-)
-DEFAULT_JSON_EXAMPLE = {
-    "deidentified_patient_id": "P-001",
-    "gene_variants": [
-        {"gene": "TP53", "variant_classification": "Missense_Mutation"},
-        {"gene": "EGFR", "variant_classification": "L858R"},
-    ],
-    "age": 67,
-    "pathologic_stage": "IIA",
-    "gender": "female",
-}
 
 
 @dataclass(slots=True)

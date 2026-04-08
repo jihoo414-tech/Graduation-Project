@@ -83,6 +83,7 @@ export type JourneyContext = {
 };
 
 export const DEFAULT_CASE_ID = 'LUAD-2026-001';
+export const FIXED_CANCER_TYPE = 'LUAD';
 
 export const ANALYSIS_STEP_INTERVAL_MS = 160;
 
@@ -112,9 +113,9 @@ export const futureInputMethodCards = [
 
 export const defaultCaseDraft: CaseDraft = {
   caseId: DEFAULT_CASE_ID,
-  cancerType: 'LUAD',
+  cancerType: FIXED_CANCER_TYPE,
   diagnosisDate: '2026-03-01',
-  stage: 'IIA',
+  stage: '',
   age: '67',
   gender: 'female',
   inputMethod: 'CSV/JSON 업로드',
@@ -289,8 +290,8 @@ export const buildJourneyContext = ({
   const stage = resolveDemoStage(pathname, casePaths);
   const stageInfo = stageMeta[stage];
   const caseId = draft.caseId.trim() || DEFAULT_CASE_ID;
-  const cancerType = draft.cancerType.trim() || '암종 미지정';
-  const stageText = draft.stage.trim() || '병기 미입력';
+  const cancerType = FIXED_CANCER_TYPE;
+  const stageText = result?.normalized_input.clinical.pathologic_stage ?? '병기 미입력';
 
   return {
     caseId,
@@ -319,9 +320,9 @@ export const buildUploadChecklist = ({
   result: ResultEnvelope | null;
 }): JourneyChecklistItem[] => [
   {
-    label: '케이스 기본 정보 확인',
-    detail: `${draft.caseId} · ${draft.cancerType} · ${draft.stage}`,
-    complete: Boolean(draft.caseId && draft.cancerType && draft.stage),
+    label: '케이스 ID 확인',
+    detail: draft.caseId || '케이스 ID를 입력해주세요.',
+    complete: Boolean(draft.caseId),
   },
   {
     label: '지원되는 입력 경로 선택',

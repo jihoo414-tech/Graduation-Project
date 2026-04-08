@@ -73,13 +73,13 @@ Suggested fields:
 - `created_at`
 
 ### `report_exports`
-Tracks report / summary generation history.
+Tracks report / export generation history.
 
 Suggested fields:
 - `id`
 - `case_id` -> `cases.id`
 - `result_id` -> `inference_results.id`
-- `export_type` *(pdf, clinician_summary, patient_summary, image, etc.)*
+- `export_type` *(pdf, clinician_summary, image, etc.)*
 - `metadata` *(JSON)*
 - `created_by_user_id` -> `users.id`
 - `created_at`

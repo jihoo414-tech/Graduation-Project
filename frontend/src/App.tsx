@@ -24,6 +24,7 @@ import {
   defaultCaseDraft,
   defaultDemoSession,
   deriveCaseStatus,
+  FIXED_CANCER_TYPE,
   futureInputMethodCards,
   initialRecentCases,
   normalizePathname,
@@ -129,7 +130,12 @@ function App() {
   const persistedWorkspaceState = useMemo(() => loadPersistedWorkspaceState(), []);
   const [pathname, setPathname] = useState(() => normalizePathname(window.location.pathname));
   const [session, setSession] = useState(persistedWorkspaceState.session ?? defaultDemoSession);
-  const [caseDraft, setCaseDraft] = useState<CaseDraft>(persistedWorkspaceState.caseDraft ?? defaultCaseDraft);
+  const [caseDraft, setCaseDraft] = useState<CaseDraft>(() => ({
+    ...defaultCaseDraft,
+    ...persistedWorkspaceState.caseDraft,
+    cancerType: FIXED_CANCER_TYPE,
+    stage: '',
+  }));
   const [caseBuilderStep, setCaseBuilderStep] = useState(persistedWorkspaceState.caseBuilderStep ?? 0);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [viewState, setViewState] = useState<ViewState>('idle');
@@ -138,7 +144,12 @@ function App() {
   const [isDragActive, setIsDragActive] = useState(false);
   const [contractExamples, setContractExamples] = useState<ContractExamplesResponse | null>(null);
   const [contractExamplesError, setContractExamplesError] = useState<string | null>(null);
-  const [recentCases, setRecentCases] = useState(persistedWorkspaceState.recentCases ?? initialRecentCases);
+  const [recentCases, setRecentCases] = useState(() =>
+    (persistedWorkspaceState.recentCases ?? initialRecentCases).map((caseItem) => ({
+      ...caseItem,
+      cancerType: FIXED_CANCER_TYPE,
+    })),
+  );
   const [analysisStepIndex, setAnalysisStepIndex] = useState(0);
   const [actionFeedback, setActionFeedback] = useState<ActionFeedback | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -269,7 +280,7 @@ function App() {
       setRecentCases((currentCases) =>
         upsertRecentCase(currentCases, {
           id: activeCaseId,
-          cancerType: caseDraft.cancerType,
+          cancerType: FIXED_CANCER_TYPE,
           updatedAt: '방금',
           status: deriveCaseStatus('result', result),
         }),
@@ -281,7 +292,7 @@ function App() {
       window.clearInterval(intervalId);
       window.clearTimeout(timeoutId);
     };
-  }, [pathname, result, casePaths.analyzing, casePaths.result, activeCaseId, caseDraft.cancerType]);
+  }, [pathname, result, casePaths.analyzing, casePaths.result, activeCaseId]);
 
   useEffect(() => {
     if (
@@ -409,7 +420,12 @@ function App() {
 
   const openCaseBuilder = () => {
     setCaseBuilderStep(0);
-    setCaseDraft((currentDraft) => ({ ...currentDraft, inputMethod: 'CSV/JSON 업로드' }));
+    setCaseDraft((currentDraft) => ({
+      ...currentDraft,
+      cancerType: FIXED_CANCER_TYPE,
+      stage: '',
+      inputMethod: 'CSV/JSON 업로드',
+    }));
     navigate('/cases/new');
   };
 
@@ -514,7 +530,7 @@ function App() {
             setRecentCases((currentCases) =>
               upsertRecentCase(currentCases, {
                 id: activeCaseId,
-                cancerType: caseDraft.cancerType,
+                cancerType: FIXED_CANCER_TYPE,
                 updatedAt: '방금',
                 status: '입력 구성 중',
               }),
@@ -532,7 +548,7 @@ function App() {
             setRecentCases((currentCases) =>
               upsertRecentCase(currentCases, {
                 id: activeCaseId,
-                cancerType: caseDraft.cancerType,
+                cancerType: FIXED_CANCER_TYPE,
                 updatedAt: '방금',
                 status: '업로드 준비',
               }),

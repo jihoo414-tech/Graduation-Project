@@ -42,16 +42,8 @@ export function CaseBuilderPage({
               <input name="caseId" value={draft.caseId} onChange={onFieldChange} />
             </label>
             <label>
-              <span>암종</span>
-              <input name="cancerType" value={draft.cancerType} onChange={onFieldChange} />
-            </label>
-            <label>
               <span>진단 시점</span>
               <input name="diagnosisDate" type="date" value={draft.diagnosisDate} onChange={onFieldChange} />
-            </label>
-            <label>
-              <span>병기</span>
-              <input name="stage" value={draft.stage} onChange={onFieldChange} />
             </label>
             <label>
               <span>환자 연령</span>

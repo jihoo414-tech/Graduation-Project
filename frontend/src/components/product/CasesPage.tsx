@@ -1,28 +1,12 @@
 import type { ChangeEventHandler, MouseEventHandler } from 'react';
-import type { CaseStatus } from '../../lib/demoJourney';
-
-type CaseItem = {
-  id: string;
-  cancerType: string;
-  updatedAt: string;
-  status: CaseStatus;
-};
+import { caseStatusClassByLabel, filterCases, type CaseListItem } from '../../lib/cases';
 
 type CasesPageProps = {
-  cases: CaseItem[];
+  cases: CaseListItem[];
   searchQuery: string;
   onSearchChange: ChangeEventHandler<HTMLInputElement>;
   onResumeActiveCase: MouseEventHandler<HTMLButtonElement>;
   onCreateNewCase: MouseEventHandler<HTMLButtonElement>;
-};
-
-const statusClassByLabel: Record<CaseStatus, string> = {
-  '입력 구성 중': 'draft',
-  '업로드 준비': 'draft',
-  '분석 완료': 'done',
-  '의사 검토 필요': 'review',
-  '설명 준비 완료': 'explained',
-  '추가 입력 확인 필요': 'review',
 };
 
 export function CasesPage({
@@ -32,12 +16,7 @@ export function CasesPage({
   onResumeActiveCase,
   onCreateNewCase,
 }: CasesPageProps) {
-  const normalizedQuery = searchQuery.trim().toLowerCase();
-  const filteredCases = normalizedQuery
-    ? cases.filter((caseItem) =>
-        `${caseItem.id} ${caseItem.cancerType} ${caseItem.status}`.toLowerCase().includes(normalizedQuery),
-      )
-    : cases;
+  const filteredCases = filterCases(cases, searchQuery);
 
   return (
     <main className="product-shell">
@@ -79,7 +58,7 @@ export function CasesPage({
                   <p>{caseItem.cancerType}</p>
                 </div>
                 <div className="case-list-meta">
-                  <span className={`status-badge status-${statusClassByLabel[caseItem.status]}`}>
+                  <span className={`status-badge status-${caseStatusClassByLabel[caseItem.status]}`}>
                     {caseItem.status}
                   </span>
                   <small>{caseItem.updatedAt}</small>
