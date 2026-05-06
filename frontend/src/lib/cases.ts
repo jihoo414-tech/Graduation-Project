@@ -12,7 +12,6 @@ export const caseStatusClassByLabel: Record<CaseStatus, string> = {
   '업로드 준비': 'draft',
   '분석 완료': 'done',
   '의사 검토 필요': 'review',
-  '설명 준비 완료': 'explained',
   '추가 입력 확인 필요': 'review',
 };
 

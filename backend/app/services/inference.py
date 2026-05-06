@@ -390,7 +390,7 @@ def run_mock_inference(patient: NormalizedPatientInput) -> InferenceSuccessRespo
                 risk_score=score,
                 text="프로토타입용 mock 추론 결과입니다.",
             ),
-            artifacts=ResultArtifacts(survival_curve=None, explanations=[]),
+            artifacts=ResultArtifacts(survival_curve=None),
         ),
         warnings=[],
     )

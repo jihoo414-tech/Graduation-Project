@@ -560,10 +560,39 @@ strong {
   padding: 18px 20px;
 }
 
+.case-list-item-button {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
+.case-list-item-button:hover {
+  transform: translateY(-1px);
+}
+
+.case-list-item-button:focus-visible {
+  outline: 2px solid rgba(17, 17, 17, 0.28);
+  outline-offset: 3px;
+}
+
 .case-list-meta {
   display: grid;
   justify-items: end;
   gap: 8px;
+}
+
+.case-delete-button {
+  min-height: 32px;
+  padding-inline: 12px;
+  font-size: 0.82rem;
+}
+
+.case-list-action-label {
+  color: var(--text-primary);
+  font-size: 0.86rem;
+  font-weight: 600;
 }
 
 .status-badge {
@@ -996,6 +1025,50 @@ strong {
   border-color: rgba(16, 24, 40, 0.18);
 }
 
+.analysis-loading-shell {
+  display: grid;
+  justify-items: center;
+  gap: 16px;
+  padding: 56px 24px;
+  text-align: center;
+}
+
+.analysis-gear {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 92px;
+  height: 92px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(244, 245, 247, 0.94));
+  box-shadow: var(--shadow-soft);
+  color: var(--text-primary);
+  font-size: 3rem;
+  line-height: 1;
+  animation: analysis-gear-spin 1.4s linear infinite;
+}
+
+.analysis-loading-shell strong {
+  font-size: 1.2rem;
+  color: var(--text-primary);
+}
+
+.analysis-loading-shell p {
+  margin: 0;
+  color: var(--text-secondary);
+}
+
+@keyframes analysis-gear-spin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .report-document {
   display: grid;
   gap: 20px;
@@ -1031,8 +1104,25 @@ strong {
   align-items: start;
 }
 
+.app-sidebar-brand-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.app-sidebar-brand-button:hover .app-sidebar-mark,
+.app-sidebar-brand-button:focus-visible .app-sidebar-mark {
+  transform: translateY(-1px);
+}
+
 .app-sidebar-mark {
   margin-top: 2px;
+  transition: transform 150ms ease;
 }
 
 .app-sidebar-brand h2 {
@@ -1145,10 +1235,6 @@ strong {
 }
 
 .report-stage-card,
-.explanation-grid {
-  margin-bottom: 18px;
-}
-
 .muted-text {
   margin: 0;
 }

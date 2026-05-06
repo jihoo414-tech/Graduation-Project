@@ -82,7 +82,7 @@
         },
         "artifacts": {
           "type": "object",
-          "required": ["survival_curve", "explanations"],
+          "required": ["survival_curve"],
           "additionalProperties": true,
           "properties": {
             "survival_curve": {
@@ -109,18 +109,6 @@
                   }
                 }
               ]
-            },
-            "explanations": {
-              "type": "array",
-              "items": {
-                "type": "object",
-                "required": ["title", "detail"],
-                "additionalProperties": false,
-                "properties": {
-                  "title": { "type": "string" },
-                  "detail": { "type": "string" }
-                }
-              }
             }
           }
         }

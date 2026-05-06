@@ -6,9 +6,6 @@ import { AnalyzingPage } from './components/product/AnalyzingPage';
 import { CaseBuilderPage } from './components/product/CaseBuilderPage';
 import { CasesPage } from './components/product/CasesPage';
 import { DashboardPage } from './components/product/DashboardPage';
-import { ExplanationPage } from './components/product/ExplanationPage';
-import { ReportPage } from './components/product/ReportPage';
-import { ResultWorkspace } from './components/workspace/ResultWorkspace';
 import { UploadPage } from './components/workspace/UploadPage';
 import {
   fetchContractExamples,
@@ -16,11 +13,9 @@ import {
   uploadPatientFile,
 } from './lib/api';
 import {
-  ANALYSIS_STEP_INTERVAL_MS,
-  analysisSteps,
+  ANALYSIS_DURATION_MS,
   buildCasePaths,
   buildJourneyContext,
-  defaultReportStage,
   defaultCaseDraft,
   defaultDemoSession,
   deriveCaseStatus,
@@ -32,7 +27,6 @@ import {
   upsertRecentCase,
   type ActionFeedback,
   type CaseDraft,
-  type ReportStage,
   type ViewState,
 } from './lib/demoJourney';
 import {
@@ -41,7 +35,6 @@ import {
   persistWorkspaceState,
 } from './lib/persistence';
 import type { ContractExamplesResponse, ResultEnvelope } from './lib/types';
-import { buildClinicianSummary } from './lib/workspace';
 
 const supportedUploadExtensions = ['.csv', '.json'];
 
@@ -88,44 +81,6 @@ const downloadText = (filename: string, content: string, mimeType: string) => {
   URL.revokeObjectURL(url);
 };
 
-const saveWorkspaceSnapshotAsImage = (result: ResultEnvelope) => {
-  const canvas = document.createElement('canvas');
-  canvas.width = 1400;
-  canvas.height = 900;
-  const context = canvas.getContext('2d');
-
-  if (!context) {
-    return false;
-  }
-
-  context.fillStyle = '#ffffff';
-  context.fillRect(0, 0, canvas.width, canvas.height);
-
-  context.fillStyle = '#111111';
-  context.fillRect(60, 60, 1280, 180);
-
-  context.fillStyle = '#ffffff';
-  context.font = 'bold 56px Inter, system-ui, sans-serif';
-  context.fillText('결과 대시보드 스냅샷', 96, 140);
-  context.font = '28px Inter, system-ui, sans-serif';
-  context.fillText(`환자 ID ${result.patient.deidentified_patient_id}`, 96, 190);
-
-  context.fillStyle = '#111111';
-  context.font = 'bold 34px Inter, system-ui, sans-serif';
-  context.fillText(`위험군: ${result.result.summary.risk_level}`, 96, 320);
-  context.fillText(`위험 점수: ${result.result.summary.risk_score.toFixed(2)}`, 96, 372);
-
-  context.font = '28px Inter, system-ui, sans-serif';
-  context.fillText(result.result.summary.text, 96, 444, 1180);
-
-  const link = document.createElement('a');
-  link.href = canvas.toDataURL('image/png');
-  link.download = `${result.patient.deidentified_patient_id}-result-dashboard.png`;
-  link.click();
-
-  return true;
-};
-
 function App() {
   const persistedWorkspaceState = useMemo(() => loadPersistedWorkspaceState(), []);
   const [pathname, setPathname] = useState(() => normalizePathname(window.location.pathname));
@@ -148,14 +103,11 @@ function App() {
     (persistedWorkspaceState.recentCases ?? initialRecentCases).map((caseItem) => ({
       ...caseItem,
       cancerType: FIXED_CANCER_TYPE,
+      status: (caseItem.status as string) === '설명 준비 완료' ? '분석 완료' : caseItem.status,
     })),
   );
-  const [analysisStepIndex, setAnalysisStepIndex] = useState(0);
   const [actionFeedback, setActionFeedback] = useState<ActionFeedback | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [reportStage, setReportStage] = useState<ReportStage>(
-    persistedWorkspaceState.reportStage ?? defaultReportStage,
-  );
   const [shouldAutoUploadSample, setShouldAutoUploadSample] = useState(false);
 
   const activeCaseId = caseDraft.caseId.trim() || defaultCaseDraft.caseId;
@@ -254,45 +206,30 @@ function App() {
       caseBuilderStep,
       recentCases,
       result,
-      reportStage,
     });
-  }, [session, caseDraft, caseBuilderStep, recentCases, result, reportStage]);
+  }, [session, caseDraft, caseBuilderStep, recentCases, result]);
 
   useEffect(() => {
     if (pathname !== casePaths.analyzing || !result) {
       return;
     }
 
-    setAnalysisStepIndex(0);
-    const intervalId = window.setInterval(() => {
-      setAnalysisStepIndex((currentIndex) => {
-        if (currentIndex >= analysisSteps.length - 1) {
-          window.clearInterval(intervalId);
-          return currentIndex;
-        }
-
-        return currentIndex + 1;
-      });
-    }, ANALYSIS_STEP_INTERVAL_MS);
-
     const timeoutId = window.setTimeout(() => {
-      navigate(casePaths.result, { replace: true });
       setRecentCases((currentCases) =>
         upsertRecentCase(currentCases, {
           id: activeCaseId,
           cancerType: FIXED_CANCER_TYPE,
           updatedAt: '방금',
-          status: deriveCaseStatus('result', result),
+          status: deriveCaseStatus('dashboard', result),
         }),
       );
-      notifyAction('분석이 완료되어 결과 대시보드가 최신 상태로 업데이트되었습니다.');
-    }, analysisSteps.length * ANALYSIS_STEP_INTERVAL_MS + 150);
+      navigate('/cases', { replace: true });
+    }, ANALYSIS_DURATION_MS);
 
     return () => {
-      window.clearInterval(intervalId);
       window.clearTimeout(timeoutId);
     };
-  }, [pathname, result, casePaths.analyzing, casePaths.result, activeCaseId]);
+  }, [pathname, result, casePaths.analyzing, activeCaseId]);
 
   useEffect(() => {
     if (
@@ -347,9 +284,7 @@ function App() {
     setResult(null);
     setError(null);
     setIsDragActive(false);
-    setAnalysisStepIndex(0);
     setActionFeedback(null);
-    setReportStage(defaultReportStage);
     setShouldAutoUploadSample(false);
   };
 
@@ -438,10 +373,26 @@ function App() {
     openCaseBuilder();
   };
 
+  const deleteCase = (caseId: string) => {
+    if (!window.confirm(`정말 ${caseId} 케이스를 삭제하시겠습니까?`)) {
+      return;
+    }
+
+    setRecentCases((currentCases) => currentCases.filter((caseItem) => caseItem.id !== caseId));
+
+    if (activeCaseId === caseId) {
+      resetCaseFlow();
+      setCaseBuilderStep(0);
+      setCaseDraft({
+        ...defaultCaseDraft,
+        caseId: '',
+      });
+    }
+  };
+
   const sidebarItems = [
     { label: 'Dashboard', path: '/dashboard' },
     { label: 'Cases', path: '/cases', activePath: '/cases', onClick: openCasesHome },
-    { label: 'Reports', path: casePaths.report, activePath: casePaths.report, disabled: !result },
     { label: 'Settings', path: '/settings' },
   ];
 
@@ -450,18 +401,7 @@ function App() {
       ? '/dashboard'
       : pathname === '/settings'
         ? '/settings'
-        : pathname === casePaths.report
-          ? casePaths.report
-          : '/cases';
-
-  const resumeCasePath =
-    pathname.startsWith('/cases/') && pathname !== '/cases/new'
-      ? pathname
-      : result
-        ? casePaths.result
-        : selectedFile || viewState !== 'idle'
-          ? casePaths.upload
-          : '/cases/new';
+        : '/cases';
 
   const renderSettingsPage = () => (
     <main className="product-shell">
@@ -501,9 +441,7 @@ function App() {
           onSearchChange={(event) => {
             setSearchQuery(event.target.value);
           }}
-          onResumeActiveCase={() => {
-            navigate(resumeCasePath);
-          }}
+          onDeleteCase={deleteCase}
           onCreateNewCase={openCaseBuilder}
         />
       );
@@ -517,12 +455,6 @@ function App() {
           supportedInputMethods={supportedInputMethods}
           futureInputMethods={futureInputMethodCards}
           onFieldChange={handleCaseDraftFieldChange}
-          onToggleExplanation={() => {
-            setCaseDraft((currentDraft) => ({
-              ...currentDraft,
-              includeExplanation: !currentDraft.includeExplanation,
-            }));
-          }}
           onPreviousStep={() => {
             setCaseBuilderStep((currentStep) => Math.max(currentStep - 1, 0));
           }}
@@ -538,7 +470,7 @@ function App() {
             navigate('/dashboard');
           }}
           onContinueToUpload={() => {
-            if (caseBuilderStep < 3) {
+            if (caseBuilderStep < 2) {
               setCaseBuilderStep((currentStep) => currentStep + 1);
               return;
             }
@@ -636,112 +568,7 @@ function App() {
     }
 
     if (pathname === casePaths.analyzing) {
-      return <AnalyzingPage steps={analysisSteps} activeIndex={analysisStepIndex} />;
-    }
-
-    if (pathname === casePaths.result && result) {
-      return (
-        <ResultWorkspace
-          result={result}
-          journeyContext={journeyContext}
-          actionFeedback={actionFeedback}
-          reportStage={reportStage}
-          onBackToUpload={() => {
-            navigate(casePaths.upload);
-          }}
-          onSavePdf={() => {
-            window.print();
-            notifyAction('인쇄 대화상자를 열어 결과 요약을 저장할 준비를 마쳤습니다.');
-          }}
-          onSaveImage={() => {
-            if (saveWorkspaceSnapshotAsImage(result)) {
-              notifyAction('결과 대시보드 스냅샷을 이미지로 저장했습니다.');
-              return;
-            }
-
-            notifyAction('이미지 저장을 지원하지 않는 환경입니다.', 'info');
-          }}
-          onDownloadJson={() => {
-            downloadText(
-              `${result.patient.deidentified_patient_id}-result.json`,
-              JSON.stringify(result, null, 2),
-              'application/json',
-            );
-            notifyAction('결과 JSON을 내려받았습니다.');
-          }}
-          onDownloadClinicianSummary={() => {
-            downloadText(
-              `${result.patient.deidentified_patient_id}-clinician-summary.txt`,
-              buildClinicianSummary(result),
-              'text/plain;charset=utf-8',
-            );
-            notifyAction('의료진 요약 메모를 저장했습니다.');
-          }}
-          onOpenExplanation={() => {
-            navigate(casePaths.explanation);
-          }}
-          onOpenReport={() => {
-            navigate(casePaths.report);
-          }}
-        />
-      );
-    }
-
-    if (pathname === casePaths.explanation && result) {
-      return (
-        <ExplanationPage
-          result={result}
-          journeyContext={journeyContext}
-          actionFeedback={actionFeedback}
-          onBackToResult={() => {
-            navigate(casePaths.result);
-          }}
-          onCopy={(content) => {
-            void navigator.clipboard
-              ?.writeText(content)
-              .then(() => {
-                notifyAction('환자 설명 문장을 클립보드에 복사했습니다.');
-              })
-              .catch(() => {
-                notifyAction('클립보드 권한을 확인해주세요. 상담 메모 저장은 계속 사용할 수 있습니다.', 'info');
-              });
-          }}
-          onPrint={() => {
-            window.print();
-            notifyAction('상담용 요약을 인쇄할 준비를 마쳤습니다.');
-          }}
-          onAddNote={(content) => {
-            downloadText(
-              `${result.patient.deidentified_patient_id}-counseling-note.txt`,
-              content,
-              'text/plain;charset=utf-8',
-            );
-            notifyAction('상담 메모 파일을 저장했습니다.');
-          }}
-        />
-      );
-    }
-
-    if (pathname === casePaths.report && result) {
-      return (
-        <ReportPage
-          result={result}
-          journeyContext={journeyContext}
-          actionFeedback={actionFeedback}
-          reportStage={reportStage}
-          onSetReportStage={(nextStage) => {
-            setReportStage(nextStage);
-            notifyAction(`리포트 상태를 ${nextStage} 단계로 업데이트했습니다.`, 'info');
-          }}
-          onBack={() => {
-            navigate(casePaths.result);
-          }}
-          onPrint={() => {
-            window.print();
-            notifyAction('리포트 인쇄 대화상자를 열었습니다.');
-          }}
-        />
-      );
+      return <AnalyzingPage />;
     }
 
     return renderSettingsPage();
@@ -755,6 +582,9 @@ function App() {
           items={sidebarItems}
           journeyContext={journeyContext}
           clinicianName={session.clinicianName}
+          onGoHome={() => {
+            navigate('/dashboard');
+          }}
           onNavigate={(nextPath) => {
             navigate(nextPath);
           }}

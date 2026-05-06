@@ -7,7 +7,6 @@ export type CaseStatus =
   | '업로드 준비'
   | '분석 완료'
   | '의사 검토 필요'
-  | '설명 준비 완료'
   | '추가 입력 확인 필요';
 
 export type SupportedInputMethod = 'CSV/JSON 업로드' | '샘플 데이터로 테스트';
@@ -24,7 +23,6 @@ export type CaseDraft = {
   biomarkerSummary: string;
   pathologySummary: string;
   analysisMode: string;
-  includeExplanation: boolean;
 };
 
 export type RecentCase = {
@@ -48,9 +46,6 @@ export type DemoStage =
   | 'case-builder'
   | 'upload'
   | 'analyzing'
-  | 'result'
-  | 'explanation'
-  | 'report'
   | 'settings';
 
 export type JourneyChecklistItem = {
@@ -63,8 +58,6 @@ export type ActionFeedback = {
   tone: 'success' | 'info';
   message: string;
 };
-
-export type ReportStage = 'draft' | 'clinician-reviewed' | 'patient-ready';
 
 export type JourneyContext = {
   caseId: string;
@@ -85,15 +78,7 @@ export type JourneyContext = {
 export const DEFAULT_CASE_ID = 'LUAD-2026-001';
 export const FIXED_CANCER_TYPE = 'LUAD';
 
-export const ANALYSIS_STEP_INTERVAL_MS = 160;
-
-export const analysisSteps = [
-  '데이터 검증 중',
-  '필수 변수 확인 중',
-  '예측 모델 실행 중',
-  '해석 문장 생성 중',
-  '리포트 구성 중',
-];
+export const ANALYSIS_DURATION_MS = 950;
 
 export const supportedInputMethods: readonly SupportedInputMethod[] = [
   'CSV/JSON 업로드',
@@ -123,7 +108,6 @@ export const defaultCaseDraft: CaseDraft = {
   biomarkerSummary: 'TP53 mutation, EGFR status pending',
   pathologySummary: 'Residual tumor with moderate differentiation',
   analysisMode: '재발 위험 예측',
-  includeExplanation: true,
 };
 
 export const initialRecentCases: RecentCase[] = [];
@@ -133,16 +117,8 @@ export const defaultDemoSession: DemoSession = {
   organization: 'Seoul Medical Center',
   specialty: '종양내과',
   email: 'doctor@example.com',
-  requestGoal: '암 진단 결과 해석 및 환자 설명 지원',
-  note: '재발 위험 해석과 환자 설명 생성 데모를 확인하고 싶습니다.',
-};
-
-export const defaultReportStage: ReportStage = 'draft';
-
-export const reportStageLabels: Record<ReportStage, string> = {
-  draft: 'Draft',
-  'clinician-reviewed': 'Clinician reviewed',
-  'patient-ready': 'Patient ready',
+  requestGoal: '암 진단 결과 해석 및 리포트 지원',
+  note: '재발 위험 해석과 결과 검토 흐름 데모를 확인하고 싶습니다.',
 };
 
 export const normalizePathname = (pathname: string) => {
@@ -163,9 +139,6 @@ export const normalizePathname = (pathname: string) => {
 export const buildCasePaths = (caseId: string) => ({
   upload: `/cases/${caseId}/upload`,
   analyzing: `/cases/${caseId}/analyzing`,
-  result: `/cases/${caseId}/result`,
-  explanation: `/cases/${caseId}/explanation`,
-  report: `/cases/${caseId}/report`,
 });
 
 const stageMeta: Record<DemoStage, { label: string; summary: string; nextStepLabel: string }> = {
@@ -187,22 +160,7 @@ const stageMeta: Record<DemoStage, { label: string; summary: string; nextStepLab
   analyzing: {
     label: '분석 진행',
     summary: '입력 검증과 결과 생성 단계를 순차적으로 진행합니다.',
-    nextStepLabel: '결과 대시보드 확인',
-  },
-  result: {
-    label: '결과 검토',
-    summary: '위험도, 근거, 환자 설명, 리포트까지 한 흐름으로 이어집니다.',
-    nextStepLabel: '설명 또는 리포트 열기',
-  },
-  explanation: {
-    label: '환자 설명',
-    summary: '전문의용 요약과 환자용 설명을 전환하며 상담 문장을 마감합니다.',
-    nextStepLabel: '상담 메모 저장',
-  },
-  report: {
-    label: '리포트 출력',
-    summary: '케이스 요약과 결과를 문서형 레이아웃으로 정리합니다.',
-    nextStepLabel: 'PDF 저장 / 공유',
+    nextStepLabel: '케이스 목록으로 복귀',
   },
   settings: {
     label: '설정',
@@ -231,18 +189,6 @@ export const resolveDemoStage = (
     return 'analyzing';
   }
 
-  if (pathname === casePaths.result) {
-    return 'result';
-  }
-
-  if (pathname === casePaths.explanation) {
-    return 'explanation';
-  }
-
-  if (pathname === casePaths.report) {
-    return 'report';
-  }
-
   return 'settings';
 };
 
@@ -253,10 +199,6 @@ export const deriveCaseStatus = (stage: DemoStage, result: ResultEnvelope | null
 
   if (stage === 'upload' || stage === 'analyzing') {
     return '업로드 준비';
-  }
-
-  if (stage === 'explanation' || stage === 'report') {
-    return '설명 준비 완료';
   }
 
   if (!result) {

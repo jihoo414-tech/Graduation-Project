@@ -80,7 +80,7 @@ def test_upload_valid_csv_success() -> None:
     assert body['patient'] == {'deidentified_patient_id': 'P-001'}
     assert body['normalized_input'] == EXPECTED_NORMALIZED_INPUT
     assert body['result']['adapter'] == 'mock'
-    assert body['result']['artifacts'] == {'survival_curve': None, 'explanations': []}
+    assert body['result']['artifacts'] == {'survival_curve': None}
 
 
 def test_upload_valid_json_success() -> None:

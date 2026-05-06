@@ -5,7 +5,7 @@ type CasesPageProps = {
   cases: CaseListItem[];
   searchQuery: string;
   onSearchChange: ChangeEventHandler<HTMLInputElement>;
-  onResumeActiveCase: MouseEventHandler<HTMLButtonElement>;
+  onDeleteCase: (caseId: string) => void;
   onCreateNewCase: MouseEventHandler<HTMLButtonElement>;
 };
 
@@ -13,7 +13,7 @@ export function CasesPage({
   cases,
   searchQuery,
   onSearchChange,
-  onResumeActiveCase,
+  onDeleteCase,
   onCreateNewCase,
 }: CasesPageProps) {
   const filteredCases = filterCases(cases, searchQuery);
@@ -62,6 +62,13 @@ export function CasesPage({
                     {caseItem.status}
                   </span>
                   <small>{caseItem.updatedAt}</small>
+                  <button
+                    type="button"
+                    className="secondary-button case-delete-button"
+                    onClick={() => onDeleteCase(caseItem.id)}
+                  >
+                    삭제
+                  </button>
                 </div>
               </article>
             ))}
@@ -71,15 +78,6 @@ export function CasesPage({
         </section>
 
         <aside className="dashboard-side-panel">
-          <article className="dashboard-side-card">
-            <p className="marketing-kicker">Current case</p>
-            <h3>현재 작업 이어보기</h3>
-            <p>프로토타입은 최근 작업 중인 케이스 흐름을 즉시 이어볼 수 있도록 구성되어 있습니다.</p>
-            <button type="button" className="primary-button" onClick={onResumeActiveCase}>
-              현재 케이스 열기
-            </button>
-          </article>
-
           <article className="dashboard-side-card caution-card">
             <p className="marketing-kicker">Create another</p>
             <h3>새 케이스 시작</h3>

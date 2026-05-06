@@ -15,11 +15,11 @@ export function DashboardPage({
   const reviewQueueCount = cases.filter(
     (caseItem) => caseItem.status === '의사 검토 필요' || caseItem.status === '추가 입력 확인 필요',
   ).length;
-  const explanationReadyCount = cases.filter((caseItem) => caseItem.status === '설명 준비 완료').length;
+  const completedCount = cases.filter((caseItem) => caseItem.status === '분석 완료').length;
   const summaryCards = [
     { label: 'Open cases', value: String(cases.length), meta: `최근 목록 기준 ${cases.length}건` },
     { label: 'Review queue', value: String(reviewQueueCount), meta: '의사 검토 필요' },
-    { label: 'Explanation ready', value: String(explanationReadyCount), meta: '상담 문장 생성 완료' },
+    { label: 'Completed', value: String(completedCount), meta: '분석 결과 확인 가능' },
   ];
 
   return (

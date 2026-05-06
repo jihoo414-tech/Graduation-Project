@@ -15,6 +15,7 @@ type AppSidebarProps = {
   items: SidebarItem[];
   journeyContext: JourneyContext;
   clinicianName: string;
+  onGoHome: MouseEventHandler<HTMLButtonElement>;
   onNavigate: (path: string) => void;
   onLogout: MouseEventHandler<HTMLButtonElement>;
 };
@@ -24,18 +25,26 @@ export function AppSidebar({
   items,
   journeyContext,
   clinicianName,
+  onGoHome,
   onNavigate,
   onLogout,
 }: AppSidebarProps) {
   return (
     <aside className="app-sidebar">
       <div className="app-sidebar-brand">
-        <div className="reference-brand-mark app-sidebar-mark" aria-hidden="true">
-          <span />
-          <span />
-          <span />
-          <span />
-        </div>
+        <button
+          type="button"
+          className="app-sidebar-brand-button"
+          aria-label="홈 화면으로 이동"
+          onClick={onGoHome}
+        >
+          <div className="reference-brand-mark app-sidebar-mark" aria-hidden="true">
+            <span />
+            <span />
+            <span />
+            <span />
+          </div>
+        </button>
         <div>
           <p className="marketing-kicker">{PRODUCT_BRAND_NAME}</p>
           <h2>{PRODUCT_WORKSPACE_NAME}</h2>
@@ -72,7 +81,7 @@ export function AppSidebar({
         <strong>{clinicianName}</strong>
         <span>{journeyContext.caseId}</span>
         <button type="button" className="secondary-button" onClick={onLogout}>
-          세션 초기화
+          로그아웃
         </button>
       </div>
     </aside>

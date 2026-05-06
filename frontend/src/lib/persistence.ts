@@ -1,4 +1,4 @@
-import type { CaseDraft, DemoSession, RecentCase, ReportStage } from './demoJourney';
+import type { CaseDraft, DemoSession, RecentCase } from './demoJourney';
 import type { ResultEnvelope } from './types';
 
 type PersistedWorkspaceState = {
@@ -7,7 +7,6 @@ type PersistedWorkspaceState = {
   caseBuilderStep?: number;
   recentCases?: RecentCase[];
   result?: ResultEnvelope | null;
-  reportStage?: ReportStage;
 };
 
 const STORAGE_KEY = 'graduation-project:workspace-state:v1';

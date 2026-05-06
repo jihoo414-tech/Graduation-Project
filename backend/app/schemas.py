@@ -57,13 +57,6 @@ class Summary(BaseModel):
     text: str
 
 
-class ExplanationArtifact(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-
-    title: str
-    detail: str
-
-
 class SurvivalCurvePoint(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -78,7 +71,6 @@ class SurvivalCurveArtifact(BaseModel):
 
 class ResultArtifacts(BaseModel):
     survival_curve: SurvivalCurveArtifact | None = None
-    explanations: list[ExplanationArtifact] = Field(default_factory=list)
 
 
 class InferenceResult(BaseModel):

@@ -1,9 +1,4 @@
-type AnalyzingPageProps = {
-  steps: string[];
-  activeIndex: number;
-};
-
-export function AnalyzingPage({ steps, activeIndex }: AnalyzingPageProps) {
+export function AnalyzingPage() {
   return (
     <main className="product-shell">
       <section className="workspace-page-shell">
@@ -11,31 +6,16 @@ export function AnalyzingPage({ steps, activeIndex }: AnalyzingPageProps) {
           <div>
             <p className="workspace-page-kicker">Analyzing</p>
             <h1>분석 진행 중</h1>
-            <p>퍼센트보다 현재 어떤 작업을 수행 중인지 보여줘 의료진에게 더 높은 신뢰를 전달합니다.</p>
+            <p>입력 데이터를 바탕으로 모델 예측을 수행하고 있습니다.</p>
           </div>
         </div>
 
-        <div className="analysis-step-list">
-          {steps.map((step, index) => (
-            <article
-              key={step}
-              className={`analysis-step-card ${
-                index < activeIndex ? 'is-complete' : index === activeIndex ? 'is-active' : ''
-              }`}
-            >
-              <strong>{index + 1}</strong>
-              <div>
-                <h2>{step}</h2>
-                <p>
-                  {index < activeIndex
-                    ? '완료'
-                    : index === activeIndex
-                      ? '현재 처리 중'
-                      : '대기 중'}
-                </p>
-              </div>
-            </article>
-          ))}
+        <div className="analysis-loading-shell" role="status" aria-live="polite">
+          <div className="analysis-gear" aria-hidden="true">
+            ⚙
+          </div>
+          <strong>모델 예측 수행 중</strong>
+          <p>잠시만 기다려주세요. 예측 결과를 준비하고 있습니다.</p>
         </div>
       </section>
     </main>

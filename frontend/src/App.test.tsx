@@ -36,7 +36,6 @@ const buildMockResultResponse = () => {
       },
       artifacts: {
         survival_curve: null,
-        explanations: [],
       },
     },
     warnings: [],
@@ -99,7 +98,6 @@ const goToUploadPage = async () => {
     target: { value: 'CSV/JSON 업로드' },
   });
   fireEvent.click(screen.getByRole('button', { name: /다음 단계/i }));
-  fireEvent.click(screen.getByRole('button', { name: /다음 단계/i }));
   fireEvent.click(screen.getByRole('button', { name: /분석 시작/i }));
   expect(await screen.findByRole('heading', { name: /데이터 입력 \/ 업로드/i })).toBeInTheDocument();
 };
@@ -114,7 +112,7 @@ const uploadPatientFileAndReachResult = async (file = new File(['patient'], 'pat
   expect(await screen.findByText(/모델에 넣기 전 입력 검토/i)).toBeInTheDocument();
   fireEvent.click(screen.getByRole('button', { name: /분석 실행/i }));
 
-  expect(await screen.findByRole('heading', { name: /결과 대시보드/i })).toBeInTheDocument();
+  expect(await screen.findByRole('heading', { name: /이전에 생성한 케이스/i })).toBeInTheDocument();
 };
 
 const expectSummaryCardValue = (label: RegExp, value: string) => {
@@ -137,11 +135,9 @@ describe('App', () => {
     render(<App />);
 
     const dashboardButton = await screen.findByRole('button', { name: /dashboard/i });
-    const reportsButton = screen.getByRole('button', { name: /reports/i });
 
     expect(dashboardButton).toHaveClass('is-active');
-    expect(reportsButton).not.toHaveClass('is-active');
-    expect(reportsButton).toBeDisabled();
+    expect(screen.queryByRole('button', { name: /reports/i })).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: /^새 케이스 생성$/i })).toBeInTheDocument();
     expect(screen.queryByText(/quick guide|업무 시작 흐름/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/active clinical demo session/i)).not.toBeInTheDocument();
@@ -160,14 +156,14 @@ describe('App', () => {
     expect(screen.queryByText(/LUAD-2026-0008|LUAD-2026-0007|LUAD-2026-0006/i)).not.toBeInTheDocument();
     expectSummaryCardValue(/open cases/i, '0');
     expectSummaryCardValue(/review queue/i, '0');
-    expectSummaryCardValue(/explanation ready/i, '0');
+    expectSummaryCardValue(/completed/i, '0');
 
     await uploadPatientFileAndReachResult();
     fireEvent.click(screen.getByRole('button', { name: /dashboard/i }));
     expect(screen.queryByText(/최근 분석한 케이스/i)).not.toBeInTheDocument();
     expectSummaryCardValue(/open cases/i, '1');
     expectSummaryCardValue(/review queue/i, '0');
-    expectSummaryCardValue(/explanation ready/i, '0');
+    expectSummaryCardValue(/completed/i, '1');
   });
 
   it('opens the cases list instead of the new-case form when prior cases exist', async () => {
@@ -182,9 +178,22 @@ describe('App', () => {
     expect(screen.getByText(/최근 생성한 케이스/i)).toBeInTheDocument();
     expect(screen.getAllByText(/LUAD-2026-001/i).length).toBeGreaterThan(0);
     expect(screen.queryByRole('heading', { name: /새 케이스 생성/i })).not.toBeInTheDocument();
+    expect(screen.queryByText(/현재 작업 이어보기/i)).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /현재 케이스 열기/i })).not.toBeInTheDocument();
+  });
 
-    fireEvent.click(screen.getByRole('button', { name: /현재 케이스 열기/i }));
-    expect(await screen.findByRole('heading', { name: /결과 대시보드/i })).toBeInTheDocument();
+  it('returns to the dashboard when the sidebar brand icon is clicked', async () => {
+    mockFetch();
+
+    render(<App />);
+
+    await uploadPatientFileAndReachResult();
+    fireEvent.click(screen.getByRole('button', { name: /cases/i }));
+    expect(await screen.findByRole('heading', { name: /이전에 생성한 케이스/i })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /홈 화면으로 이동/i }));
+    expect(await screen.findByRole('heading', { name: /로그인 후 첫 화면/i })).toBeInTheDocument();
+    expect(window.location.pathname).toBe('/dashboard');
   });
 
   it('opens the same case-builder screen from the cases nav and the new-case CTA', async () => {
@@ -246,8 +255,9 @@ describe('App', () => {
     expect(await screen.findByRole('heading', { name: /로그인 후 첫 화면/i })).toBeInTheDocument();
     expect(window.location.pathname).toBe('/dashboard');
     await uploadPatientFileAndReachResult();
-    expect(screen.getByText(/P-001/)).toBeInTheDocument();
-    expect(screen.getAllByText(/중간 위험/i).length).toBeGreaterThan(0);
+    expect(screen.getByRole('heading', { name: /이전에 생성한 케이스/i })).toBeInTheDocument();
+    expect(screen.getAllByText(/LUAD-2026-001/i).length).toBeGreaterThan(0);
+    expect(screen.getByText(/분석 완료/i)).toBeInTheDocument();
   });
 
   it('renders safe backend error details', async () => {
@@ -364,11 +374,48 @@ describe('App', () => {
     });
 
     fireEvent.click(screen.getByRole('button', { name: /다음 단계/i }));
-    fireEvent.click(screen.getByRole('button', { name: /다음 단계/i }));
     fireEvent.click(screen.getByRole('button', { name: /분석 시작/i }));
 
     expect(await screen.findByText(/모델에 넣기 전 입력 검토/i)).toBeInTheDocument();
     expect(screen.getByText(/샘플 환자 데이터를 자동으로 업로드해 입력 검토 패널까지 준비했습니다/i)).toBeInTheDocument();
+  });
+
+  it('does not render a separate analysis option step in the case builder', async () => {
+    mockFetch();
+
+    render(<App />);
+
+    expect(await screen.findByRole('heading', { name: /로그인 후 첫 화면/i })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /cases/i }));
+    fireEvent.click(screen.getByRole('button', { name: /다음 단계/i }));
+    fireEvent.change(screen.getByLabelText(/데이터 입력 방식/i), {
+      target: { value: 'CSV/JSON 업로드' },
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /다음 단계/i }));
+    expect(screen.getByLabelText(/주요 변이 \/ 발현 \/ 패널 결과/i)).toBeInTheDocument();
+    expect(screen.queryByLabelText(/분석 옵션/i)).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /분석 시작/i })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^다음 단계$/i })).not.toBeInTheDocument();
+  });
+
+  it('does not render a separate analysis-option step in the case builder', async () => {
+    mockFetch();
+
+    render(<App />);
+
+    expect(await screen.findByRole('heading', { name: /로그인 후 첫 화면/i })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /cases/i }));
+    fireEvent.click(screen.getByRole('button', { name: /다음 단계/i }));
+    fireEvent.change(screen.getByLabelText(/데이터 입력 방식/i), {
+      target: { value: 'CSV/JSON 업로드' },
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /다음 단계/i }));
+    expect(screen.getByLabelText(/주요 변이 \/ 발현 \/ 패널 결과/i)).toBeInTheDocument();
+    expect(screen.queryByLabelText(/분석 옵션/i)).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /분석 시작/i })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^다음 단계$/i })).not.toBeInTheDocument();
   });
 
   it('filters previous cases from the cases tab search input', async () => {
@@ -404,36 +451,58 @@ describe('App', () => {
     expect(screen.getAllByText(/LUAD-2026-001/i).length).toBeGreaterThan(0);
   });
 
-  it('opens the explanation view from result workspace and runs a print finisher action', async () => {
+  it('returns to the cases list after analysis completes instead of opening result or report pages', async () => {
     mockFetch();
-    const printSpy = vi.spyOn(window, 'print').mockImplementation(() => undefined);
 
     render(<App />);
 
     await uploadPatientFileAndReachResult();
 
-    fireEvent.click(screen.getByRole('button', { name: /환자 설명 생성/i }));
-    expect(await screen.findByRole('heading', { name: /환자 설명용 화면/i })).toBeInTheDocument();
-    expect(screen.getByRole('tab', { name: /불안이 큰 환자용/i })).toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole('button', { name: /인쇄용 요약 생성/i }));
-    expect(printSpy).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole('heading', { name: /이전에 생성한 케이스/i })).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: /결과 대시보드/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: /리포트 출력 화면/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /리포트 화면 열기/i })).not.toBeInTheDocument();
   });
 
-  it('opens the report view from the export tab and runs a print finisher action', async () => {
+  it('does not expose result or report surfaces after analysis', async () => {
     mockFetch();
-    const printSpy = vi.spyOn(window, 'print').mockImplementation(() => undefined);
 
     render(<App />);
 
     await uploadPatientFileAndReachResult();
 
-    fireEvent.click(screen.getByRole('tab', { name: /리포트\/내보내기/i }));
-    fireEvent.click(screen.getByRole('button', { name: /리포트 화면 열기/i }));
-    expect(await screen.findByRole('heading', { name: /리포트 출력 화면/i })).toBeInTheDocument();
-    expect(screen.getByRole('tab', { name: /patient ready/i })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /reports/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /결과 JSON 보기/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /의료진 요약 저장/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /리포트 화면 열기/i })).not.toBeInTheDocument();
+  });
 
-    fireEvent.click(screen.getByRole('button', { name: /pdf 저장 \/ 인쇄/i }));
-    expect(printSpy).toHaveBeenCalledTimes(1);
+  it('deletes a case after confirmation', async () => {
+    mockFetch();
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
+
+    render(<App />);
+
+    await uploadPatientFileAndReachResult();
+
+    fireEvent.click(screen.getByRole('button', { name: /삭제/i }));
+    expect(window.confirm).toHaveBeenCalled();
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: /새 케이스 생성/i })).toBeInTheDocument();
+    });
+    expect(screen.queryByRole('button', { name: /삭제/i })).not.toBeInTheDocument();
+  });
+
+  it('keeps a case when deletion is cancelled', async () => {
+    mockFetch();
+    vi.spyOn(window, 'confirm').mockReturnValue(false);
+
+    render(<App />);
+
+    await uploadPatientFileAndReachResult();
+
+    fireEvent.click(screen.getByRole('button', { name: /삭제/i }));
+    expect(window.confirm).toHaveBeenCalled();
+    expect(screen.getAllByText(/LUAD-2026-001/i).length).toBeGreaterThan(0);
   });
 });

@@ -7,12 +7,11 @@ type CaseBuilderPageProps = {
   supportedInputMethods: readonly SupportedInputMethod[];
   futureInputMethods: readonly { label: string; note: string }[];
   onFieldChange: ChangeEventHandler<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>;
-  onToggleExplanation: MouseEventHandler<HTMLButtonElement>;
   onPreviousStep: MouseEventHandler<HTMLButtonElement>;
   onSaveAndExit: MouseEventHandler<HTMLButtonElement>;
   onContinueToUpload: MouseEventHandler<HTMLButtonElement>;
 };
-const FINAL_STEP_INDEX = 3;
+const FINAL_STEP_INDEX = 2;
 
 export function CaseBuilderPage({
   draft,
@@ -20,7 +19,6 @@ export function CaseBuilderPage({
   supportedInputMethods,
   futureInputMethods,
   onFieldChange,
-  onToggleExplanation,
   onPreviousStep,
   onSaveAndExit,
   onContinueToUpload,
@@ -114,28 +112,6 @@ export function CaseBuilderPage({
                 onChange={onFieldChange}
               />
             </label>
-          </div>
-        ) : null}
-
-        {activeStep === 3 ? (
-          <div className="builder-form-grid">
-            <label>
-              <span>분석 옵션</span>
-              <select name="analysisMode" value={draft.analysisMode} onChange={onFieldChange}>
-                <option value="기본 분석">기본 분석</option>
-                <option value="재발 위험 예측">재발 위험 예측</option>
-              </select>
-            </label>
-            <div className="builder-toggle-card">
-              <span>설명 생성 포함 여부</span>
-              <button
-                type="button"
-                className={`workspace-tab ${draft.includeExplanation ? 'is-active' : ''}`}
-                onClick={onToggleExplanation}
-              >
-                {draft.includeExplanation ? '포함' : '미포함'}
-              </button>
-            </div>
           </div>
         ) : null}
 

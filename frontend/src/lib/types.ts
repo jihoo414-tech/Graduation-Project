@@ -34,11 +34,6 @@ export type SurvivalCurve = {
   [key: string]: unknown;
 };
 
-export type Explanation = {
-  title: string;
-  detail: string;
-};
-
 export type ResultEnvelope = {
   result_version: 'v1';
   patient: {
@@ -54,7 +49,6 @@ export type ResultEnvelope = {
     };
     artifacts: {
       survival_curve: SurvivalCurve | null;
-      explanations: Explanation[];
       [key: string]: unknown;
     };
   };
