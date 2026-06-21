@@ -9,11 +9,11 @@ from app.services.expression_scores import ExpressionScores
 from app.services.feature_builder import build_model_patient
 from app.services.model_artifacts import ModelArtifactPaths
 
-ZERO_FILL = ["ADAM21P1", "BAGE2", "MALAT1", "RP11-193H5.1", "SSPO"]
+MISSING_GENES = ["ADAM21P1", "BAGE2", "MALAT1", "RP11-193H5.1", "SSPO", "G282"]
 
 
 def _paths_with_coefficients(tmp_path: Path) -> ModelArtifactPaths:
-    genes = [*ZERO_FILL, *(f"G{index}" for index in range(283))]
+    genes = [*MISSING_GENES[:-1], *(f"G{index}" for index in range(283))]
     rows = ["significant_genes,coef"]
     rows.extend(f"{gene},1.0" for gene in genes)
     rows.extend(
@@ -30,8 +30,8 @@ def _paths_with_coefficients(tmp_path: Path) -> ModelArtifactPaths:
 
 
 def _mutation_csv(patient_id: str = "P-001") -> bytes:
-    headers = ["Patient_ID", "OS_days", "OS_event", *(f"G{index}" for index in range(283))]
-    values = [patient_id, "700", "0", *("1" if index == 0 else "0" for index in range(283))]
+    headers = ["Patient_ID", "OS_days", "OS_event", *(f"G{index}" for index in range(282))]
+    values = [patient_id, "700", "0", *("1" if index == 0 else "0" for index in range(282))]
     return (",".join(headers) + "\n" + ",".join(values) + "\n").encode()
 
 
@@ -43,7 +43,7 @@ def _fixed_scores(_: dict[str, float], __: str) -> ExpressionScores:
     return ExpressionScores(stromal=2.5, immune=-0.5)
 
 
-def test_build_model_patient_orders_288_genes_and_zero_fills_approved_absences(
+def test_build_model_patient_orders_288_genes_and_zero_fills_missing_features(
     tmp_path: Path,
 ) -> None:
     patient = build_model_patient(
@@ -62,6 +62,7 @@ def test_build_model_patient_orders_288_genes_and_zero_fills_approved_absences(
     assert len(values) == 293
     assert values[:5] == [0.0] * 5
     assert values[5] == 1.0
+    assert values[287] == 0.0
     assert values[-5:] == [67.0, 1.0, 3.0, 2.5, -0.5]
 
 

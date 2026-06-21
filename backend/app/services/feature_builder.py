@@ -10,15 +10,6 @@ from app.services.errors import AppError, error_detail
 from app.services.expression_scores import ExpressionScores, calculate_expression_scores
 from app.services.model_artifacts import ModelArtifactPaths, load_ordered_feature_coefficients
 
-ZERO_FILL_MUTATION_GENES = {
-    "ADAM21P1",
-    "BAGE2",
-    "MALAT1",
-    "RP11-193H5.1",
-    "SSPO",
-}
-
-
 ExpressionScoreCalculator = Callable[[dict[str, float], str], ExpressionScores]
 
 
@@ -107,7 +98,7 @@ def build_model_patient(
 def _parse_mutation_matrix(
     raw_bytes: bytes, ordered_coefficients: list[tuple[str, float]]
 ) -> tuple[str, dict[str, int]]:
-    rows = _read_one_row_csv(raw_bytes, field="mutation_file")
+    rows = _read_one_row_csv(raw_bytes, field="mutation_file", allow_duplicate_headers=True)
     headers, row = rows
     if "Patient_ID" not in headers:
         raise AppError(
@@ -129,15 +120,8 @@ def _parse_mutation_matrix(
     mutation_values: dict[str, int] = {}
     for gene, _ in ordered_coefficients[:288]:
         if gene not in values_by_header:
-            if gene in ZERO_FILL_MUTATION_GENES:
-                mutation_values[gene] = 0
-                continue
-            raise AppError(
-                status_code=422,
-                code="MISSING_REQUIRED_GENE",
-                message="Mutation upload is missing a required model gene.",
-                details=[error_detail(f"mutation_file.{gene}", "required")],
-            )
+            mutation_values[gene] = 0
+            continue
         raw_value = values_by_header[gene].strip()
         if raw_value not in {"0", "1"}:
             raise AppError(
@@ -193,7 +177,11 @@ def _parse_expression_matrix(raw_bytes: bytes) -> tuple[str, dict[str, float]]:
 
 
 def _read_one_row_csv(
-    raw_bytes: bytes, *, field: str, allow_first_blank_header: bool = False
+    raw_bytes: bytes,
+    *,
+    field: str,
+    allow_first_blank_header: bool = False,
+    allow_duplicate_headers: bool = False,
 ) -> tuple[list[str], list[str]]:
     try:
         text = raw_bytes.decode("utf-8-sig")
@@ -230,7 +218,7 @@ def _read_one_row_csv(
                 message="Upload contains a blank header.",
                 details=[error_detail(field, "non_blank_headers")],
             )
-        if header in seen:
+        if header in seen and not allow_duplicate_headers:
             raise AppError(
                 status_code=422,
                 code="MALFORMED_FILE",

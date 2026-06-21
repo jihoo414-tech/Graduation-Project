@@ -384,11 +384,9 @@ strong {
 .result-page-shell,
 .result-section,
 .result-hero-grid,
-.model-score-grid,
 .result-section-grid,
 .input-summary-grid,
 .result-hero-card,
-.model-score-card,
 .threshold-card {
   display: grid;
   gap: 16px;
@@ -400,13 +398,15 @@ strong {
 }
 
 .result-hero-grid,
-.model-score-grid,
 .input-summary-grid {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
+.dashboard-chart-grid {
+  grid-template-columns: minmax(0, 1.5fr) minmax(260px, 0.8fr);
+}
+
 .result-hero-card,
-.model-score-card,
 .threshold-card {
   padding: 20px;
   border: 1px solid var(--border);
@@ -415,7 +415,7 @@ strong {
 }
 
 .result-hero-card span,
-.model-score-card dt {
+.result-hero-card span {
   color: var(--text-tertiary);
   font-family: var(--mono);
   font-size: 0.72rem;
@@ -446,28 +446,9 @@ strong {
   color: var(--text-secondary);
 }
 
-.model-score-card h3,
 .threshold-card h3 {
   margin: 0;
   font-size: 1rem;
-}
-
-.model-score-card dl {
-  display: grid;
-  gap: 12px;
-  margin: 0;
-}
-
-.model-score-card dl div {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.model-score-card dd {
-  margin: 0;
-  font-family: var(--mono);
-  font-weight: 700;
 }
 
 .result-section-grid {
@@ -518,7 +499,6 @@ strong {
   .result-page-header,
   .result-section-grid,
   .result-hero-grid,
-  .model-score-grid,
   .input-summary-grid {
     grid-template-columns: 1fr;
   }

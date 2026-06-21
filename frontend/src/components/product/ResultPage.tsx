@@ -5,12 +5,6 @@ type ResultPageProps = {
   onBackToCases: () => void;
 };
 
-const modelLabels = {
-  cox: 'Cox 생존분석',
-  rsf: 'Random Survival Forest',
-  deepsurv: 'DeepSurv',
-} as const;
-
 const formatScore = (value: number | undefined, digits = 4) =>
   typeof value === 'number' ? value.toFixed(digits) : '산출되지 않음';
 
@@ -31,6 +25,10 @@ function SurvivalCurveChart({ curve }: { curve: SurvivalCurve | null }) {
   const chartHeight = height - padding.top - padding.bottom;
   const toX = (time: number) => padding.left + (time / maxTime) * chartWidth;
   const toY = (probability: number) => padding.top + (1 - probability) * chartHeight;
+  const xTicks = Array.from({ length: Math.floor(maxTime / 500) + 1 }, (_, index) => index * 500);
+  if (xTicks.at(-1) !== maxTime) {
+    xTicks.push(Math.round(maxTime));
+  }
   const path = points
     .map((point, index) => `${index === 0 ? 'M' : 'L'} ${toX(point.time)} ${toY(point.survival_probability)}`)
     .join(' ');
@@ -47,6 +45,12 @@ function SurvivalCurveChart({ curve }: { curve: SurvivalCurve | null }) {
           </g>
         ))}
         <line x1={padding.left} x2={width - padding.right} y1={height - padding.bottom} y2={height - padding.bottom} />
+        {xTicks.map((time) => (
+          <g key={time}>
+            <line x1={toX(time)} x2={toX(time)} y1={height - padding.bottom} y2={height - padding.bottom + 5} />
+            <text x={toX(time)} y={height - padding.bottom + 19} textAnchor="middle">{time}일</text>
+          </g>
+        ))}
         <path d={path} />
         {points.map((point) => (
           <circle key={`${point.time}-${point.survival_probability}`} cx={toX(point.time)} cy={toY(point.survival_probability)} r="3" />
@@ -64,16 +68,16 @@ export function ResultPage({ result, onBackToCases }: ResultPageProps) {
   const expressionScores = artifacts.expression_scores;
 
   return (
-    <main className="product-shell">
+    <main className="product-shell authenticated-content">
       <section className="workspace-page-shell result-page-shell">
         <header className="workspace-page-header result-page-header">
           <div>
-            <p className="workspace-page-kicker">Model Result</p>
-            <h1>앙상블 분석 결과</h1>
-            <p>세 생존분석 모델의 표준화 점수를 동일 가중치로 결합한 결과입니다.</p>
+            <p className="workspace-page-kicker">Dashboard</p>
+            <h1>분석 결과 대시보드</h1>
+            <p>환자별 앙상블 위험도와 생존 분석 정보를 한 화면에서 확인합니다.</p>
           </div>
           <button type="button" className="secondary-button" onClick={onBackToCases}>
-            케이스 목록
+            새 분석
           </button>
         </header>
 
@@ -96,28 +100,7 @@ export function ResultPage({ result, onBackToCases }: ResultPageProps) {
           이 결과는 임상 의사결정 보조용 위험 예측 정보이며, 진단 또는 치료 결정을 대체하지 않습니다.
         </p>
 
-        <section className="result-section">
-          <div className="section-heading">
-            <p className="workspace-page-kicker">Model scores</p>
-            <h2>모델별 결과</h2>
-          </div>
-          <div className="model-score-grid">
-            {Object.entries(modelLabels).map(([key, label]) => {
-              const score = artifacts.model_scores?.[key];
-              return (
-                <article className="model-score-card" key={key}>
-                  <h3>{label}</h3>
-                  <dl>
-                    <div><dt>Raw score</dt><dd>{formatScore(score?.raw)}</dd></div>
-                    <div><dt>Standardized z-score</dt><dd>{formatScore(score?.z_score)}</dd></div>
-                  </dl>
-                </article>
-              );
-            })}
-          </div>
-        </section>
-
-        <section className="result-section result-section-grid">
+        <section className="result-section result-section-grid dashboard-chart-grid">
           <div>
             <div className="section-heading">
               <p className="workspace-page-kicker">Survival analysis</p>

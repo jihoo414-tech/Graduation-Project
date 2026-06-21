@@ -67,7 +67,7 @@ export default function App() {
   };
 
   if (phase === 'analyzing') return <AnalyzingPage />;
-  if (phase === 'result' && result) return <ResultPage result={result} onBackToCases={reset} />;
+  if (phase === 'result' && result) return <div className="authenticated-layout app-shell"><AppSidebar active="dashboard" onDashboard={() => setPhase('result')} onStartAnalysis={() => setPhase('input')} /><ResultPage result={result} onBackToCases={reset} /></div>;
 
   if (phase === 'dashboard') return <div className="authenticated-layout app-shell"><AppSidebar active="dashboard" onDashboard={() => setPhase('dashboard')} onStartAnalysis={() => setPhase('input')} /><main className="product-shell authenticated-content"><section className="workspace-page-shell"><p className="workspace-page-kicker">Dashboard</p><h1>LUAD 생존 위험 분석</h1><p>분석 메뉴에서 환자 임상정보와 두 개의 유전체 데이터를 입력하면 실제 앙상블 모델 결과를 확인할 수 있습니다.</p><button className="primary-button" type="button" onClick={() => setPhase('input')}>분석으로 이동</button></section></main></div>;
 

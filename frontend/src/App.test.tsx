@@ -19,7 +19,7 @@ it('submits only required inputs and renders the real ensemble result', async ()
   fireEvent.change(screen.getByLabelText('돌연변이 유무 CSV'), { target: { files: [new File(['x'], 'mutation.csv', { type: 'text/csv' })] } });
   fireEvent.change(screen.getByLabelText('RNA-seq 발현량 CSV'), { target: { files: [new File(['x'], 'expression.csv', { type: 'text/csv' })] } });
   fireEvent.click(screen.getByRole('button', { name: '실제 모델 분석 실행' }));
-  expect(await screen.findByRole('heading', { name: '앙상블 분석 결과' })).toBeInTheDocument();
+  expect(await screen.findByRole('heading', { name: '분석 결과 대시보드' })).toBeInTheDocument();
   expect(screen.getByText('Low Risk')).toBeInTheDocument();
   expect(screen.getByText('1.2000')).toBeInTheDocument();
 });
