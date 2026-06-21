@@ -10,9 +10,12 @@ const result = {
 it('submits only required inputs and renders the real ensemble result', async () => {
   vi.spyOn(window, 'fetch').mockResolvedValue(new Response(JSON.stringify(result), { status: 200 }));
   render(<App />);
-  fireEvent.click(screen.getByRole('button', { name: '분석 시작' }));
-  fireEvent.change(screen.getByLabelText('나이'), { target: { value: '67' } });
+  fireEvent.change(screen.getByLabelText('출생 연도'), { target: { value: '1960' } });
+  fireEvent.change(screen.getByLabelText('출생 월'), { target: { value: '1' } });
+  fireEvent.change(screen.getByLabelText('출생 일'), { target: { value: '1' } });
+  fireEvent.change(screen.getByLabelText('성별'), { target: { value: 'male' } });
   fireEvent.change(screen.getByLabelText('암 병기'), { target: { value: '2' } });
+  fireEvent.click(screen.getByRole('button', { name: '다음' }));
   fireEvent.change(screen.getByLabelText('돌연변이 유무 CSV'), { target: { files: [new File(['x'], 'mutation.csv', { type: 'text/csv' })] } });
   fireEvent.change(screen.getByLabelText('RNA-seq 발현량 CSV'), { target: { files: [new File(['x'], 'expression.csv', { type: 'text/csv' })] } });
   fireEvent.click(screen.getByRole('button', { name: '실제 모델 분석 실행' }));
