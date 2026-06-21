@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+from datetime import date
 from typing import Annotated
 
 from fastapi import FastAPI, File, Form, Request, UploadFile
@@ -96,7 +97,7 @@ async def health() -> HealthResponse:
 async def upload_inference(
     mutation_file: Annotated[UploadFile, File()],
     expression_file: Annotated[UploadFile, File()],
-    age: Annotated[int, Form()],
+    birth_date: Annotated[str, Form()],
     gender: Annotated[str, Form()],
     stage: Annotated[int, Form()],
 ) -> InferenceSuccessResponse:
@@ -108,6 +109,23 @@ async def upload_inference(
             code="UNSUPPORTED_FILE_TYPE",
             message="Mutation and RNA-seq uploads must be CSV files.",
             details=[error_detail("mutation_file", "csv")],
+        )
+    try:
+        birth = date.fromisoformat(birth_date)
+    except ValueError as exc:
+        raise AppError(
+            status_code=422,
+            code="INVALID_CLINICAL_VALUE",
+            message="입력을 다시 확인해주세요.",
+            details=[error_detail("birth_date", "iso_date")],
+        ) from exc
+    age = date.today().year - birth.year + 1
+    if birth > date.today() or not 1 <= age <= 120:
+        raise AppError(
+            status_code=422,
+            code="INVALID_CLINICAL_VALUE",
+            message="입력을 다시 확인해주세요.",
+            details=[error_detail("birth_date", "korean_age_1_to_120")],
         )
     patient = build_model_patient(
         mutation_bytes=await mutation_file.read(),

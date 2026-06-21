@@ -57,8 +57,7 @@ export default function App() {
     try {
       setError(null);
       setPhase('analyzing');
-      const koreanAge = new Date().getFullYear() - Number(birthYear) + 1;
-      const response = await uploadModelFiles(mutationFile, expressionFile, { age: String(koreanAge), gender, stage });
+      const response = await uploadModelFiles(mutationFile, expressionFile, { birthDate: `${birthYear}-${birthMonth.padStart(2, '0')}-${birthDay.padStart(2, '0')}`, gender, stage });
       setResult(response);
       setPhase('result');
     } catch (unknownError) {

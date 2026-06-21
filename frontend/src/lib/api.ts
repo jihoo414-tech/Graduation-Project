@@ -60,12 +60,12 @@ export const normalizeUnknownError = (error: unknown) => {
 export const uploadModelFiles = async (
   mutationFile: File,
   expressionFile: File,
-  clinical: { age: string; gender: string; stage: string },
+  clinical: { birthDate: string; gender: string; stage: string },
 ): Promise<ResultEnvelope> => {
   const formData = new FormData();
   formData.append('mutation_file', mutationFile);
   formData.append('expression_file', expressionFile);
-  formData.append('age', clinical.age);
+  formData.append('birth_date', clinical.birthDate);
   formData.append('gender', clinical.gender);
   formData.append('stage', clinical.stage);
 
