@@ -115,7 +115,7 @@ VITE_API_BASE_URL=http://localhost:8000
 - 한 명의 환자만 포함해야 합니다.
 - `Patient_ID` 열과 각 유전자의 `0`/`1` 값이 필요합니다.
 - 모델 feature에 없는 유전자는 무시됩니다.
-- 허용된 누락 유전자 5개는 `0`으로 채웁니다.
+- 모델 계약에서 허용된 누락 유전자는 `0`으로 채웁니다.
 
 ### RNA-seq CSV
 
@@ -138,9 +138,3 @@ ruff check app tests
 pytest -q
 python -m compileall -q app
 ```
-
-## 알려진 검증 제한
-
-- 현재 Stromal/Immune 입력은 ssGSEA `NES`를 사용합니다.
-- 모델 제작자가 학습 당시 ES/NES 중 무엇을 썼는지, RNA-seq 전처리를 어떻게 했는지 확인해야 합니다.
-- 최종적으로는 제작자의 golden input/output으로 Cox·RSF·DeepSurv·앙상블 점수를 비교 검증해야 합니다.
