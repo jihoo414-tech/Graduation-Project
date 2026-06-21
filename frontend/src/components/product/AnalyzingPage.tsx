@@ -10,12 +10,13 @@ export function AnalyzingPage() {
           </div>
         </div>
 
-        <div className="analysis-loading-shell" role="status" aria-live="polite">
-          <div className="analysis-gear" aria-hidden="true">
-            ⚙
-          </div>
+        <div className="analysis-loading-shell" role="status" aria-atomic="true" aria-busy="true">
+          <div className="analysis-spinner" aria-hidden="true" />
           <strong>모델 예측 수행 중</strong>
-          <p>잠시만 기다려주세요. 예측 결과를 준비하고 있습니다.</p>
+          <p>입력 데이터를 정리하고 세 가지 생존분석 모델의 결과를 결합하고 있습니다.</p>
+          <div className="analysis-progress" role="progressbar" aria-label="분석 진행 중" aria-valuetext="완료 시 자동으로 결과를 표시합니다.">
+            <span />
+          </div>
         </div>
       </section>
     </main>

@@ -1,4 +1,4 @@
-import type { BackendError, ContractExamplesResponse, ResultEnvelope } from './types';
+import type { BackendError, ResultEnvelope } from './types';
 
 const DEFAULT_API_BASE_URL = 'http://localhost:8000';
 
@@ -57,47 +57,36 @@ export const normalizeUnknownError = (error: unknown) => {
   };
 };
 
-export const uploadPatientFile = async (file: File): Promise<ResultEnvelope> => {
+export const uploadModelFiles = async (
+  mutationFile: File,
+  expressionFile: File,
+  clinical: { age: string; gender: string; stage: string },
+): Promise<ResultEnvelope> => {
   const formData = new FormData();
-  formData.append('file', file);
+  formData.append('mutation_file', mutationFile);
+  formData.append('expression_file', expressionFile);
+  formData.append('age', clinical.age);
+  formData.append('gender', clinical.gender);
+  formData.append('stage', clinical.stage);
 
+  return postInference(formData);
+};
+
+const postInference = async (formData: FormData): Promise<ResultEnvelope> => {
   const response = await fetch(`${API_BASE_URL}/api/v1/inference/upload`, {
     method: 'POST',
     body: formData,
   });
-
   const body = await response.json().catch(() => null);
-
   if (!response.ok) {
     if (isBackendError(body)) {
       throw new ApiError(response.status, body.error);
     }
-
     throw new ApiError(response.status, {
       code: 'REQUEST_FAILED',
       message: '예상하지 못한 응답으로 업로드에 실패했습니다.',
       details: [],
     });
   }
-
   return body as ResultEnvelope;
-};
-
-export const fetchContractExamples = async (): Promise<ContractExamplesResponse> => {
-  const response = await fetch(`${API_BASE_URL}/api/v1/contracts/patient-example`);
-  const body = await response.json().catch(() => null);
-
-  if (!response.ok) {
-    if (isBackendError(body)) {
-      throw new ApiError(response.status, body.error);
-    }
-
-    throw new ApiError(response.status, {
-      code: 'REQUEST_FAILED',
-      message: '계약 예시를 불러오지 못했습니다.',
-      details: [],
-    });
-  }
-
-  return body as ContractExamplesResponse;
 };

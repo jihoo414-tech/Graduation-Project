@@ -3,21 +3,22 @@ from __future__ import annotations
 import os
 from typing import Annotated
 
-from fastapi import FastAPI, File, Request, UploadFile
+from fastapi import FastAPI, File, Form, Request, UploadFile
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from app.schemas import (
-    ContractExamplesResponse,
     ErrorBody,
     ErrorDetail,
     ErrorResponse,
     HealthResponse,
     InferenceSuccessResponse,
 )
-from app.services.contracts import load_contract_examples
-from app.services.inference import AppError, parse_uploaded_patient, run_mock_inference
+from app.services.adapters import get_inference_adapter
+from app.services.errors import AppError, error_detail
+from app.services.feature_builder import build_model_patient
+from app.services.model_artifacts import artifact_paths_from_env
 
 DEFAULT_DEV_CORS_ORIGINS = [
     "http://localhost:5173",
@@ -29,6 +30,7 @@ ERROR_RESPONSES = {
     400: {"model": ErrorResponse},
     415: {"model": ErrorResponse},
     422: {"model": ErrorResponse},
+    503: {"model": ErrorResponse},
 }
 
 
@@ -82,12 +84,8 @@ async def request_validation_error_handler(
 
 @app.get("/api/v1/health", response_model=HealthResponse)
 async def health() -> HealthResponse:
-    return HealthResponse(status="ok", adapter="mock")
+    return HealthResponse(status="ok", adapter=get_inference_adapter().name)
 
-
-@app.get("/api/v1/contracts/patient-example", response_model=ContractExamplesResponse)
-async def patient_example() -> ContractExamplesResponse:
-    return load_contract_examples()
 
 
 @app.post(
@@ -96,8 +94,27 @@ async def patient_example() -> ContractExamplesResponse:
     responses=ERROR_RESPONSES,
 )
 async def upload_inference(
-    file: Annotated[UploadFile, File(...)],
+    mutation_file: Annotated[UploadFile, File()],
+    expression_file: Annotated[UploadFile, File()],
+    age: Annotated[int, Form()],
+    gender: Annotated[str, Form()],
+    stage: Annotated[int, Form()],
 ) -> InferenceSuccessResponse:
-    payload = await file.read()
-    patient = parse_uploaded_patient(file.filename, payload, file.content_type)
-    return run_mock_inference(patient)
+    mutation_is_csv = (mutation_file.filename or "").lower().endswith(".csv")
+    expression_is_csv = (expression_file.filename or "").lower().endswith(".csv")
+    if not mutation_is_csv or not expression_is_csv:
+        raise AppError(
+            status_code=415,
+            code="UNSUPPORTED_FILE_TYPE",
+            message="Mutation and RNA-seq uploads must be CSV files.",
+            details=[error_detail("mutation_file", "csv")],
+        )
+    patient = build_model_patient(
+        mutation_bytes=await mutation_file.read(),
+        expression_bytes=await expression_file.read(),
+        age=age,
+        gender=gender,
+        stage=stage,
+        paths=artifact_paths_from_env(),
+    )
+    return get_inference_adapter().run(patient)

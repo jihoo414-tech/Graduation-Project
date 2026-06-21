@@ -1,89 +1,14 @@
-import type { MouseEventHandler } from 'react';
-import type { JourneyContext } from '../../lib/demoJourney';
-import { PRODUCT_BRAND_NAME, PRODUCT_WORKSPACE_NAME } from '../../lib/productContent';
+type AppSidebarProps = { onStartAnalysis: () => void; onHome: () => void };
 
-type SidebarItem = {
-  label: string;
-  path: string;
-  activePath?: string;
-  disabled?: boolean;
-  onClick?: () => void;
-};
-
-type AppSidebarProps = {
-  activePath: string;
-  items: SidebarItem[];
-  journeyContext: JourneyContext;
-  clinicianName: string;
-  onGoHome: MouseEventHandler<HTMLButtonElement>;
-  onNavigate: (path: string) => void;
-  onLogout: MouseEventHandler<HTMLButtonElement>;
-};
-
-export function AppSidebar({
-  activePath,
-  items,
-  journeyContext,
-  clinicianName,
-  onGoHome,
-  onNavigate,
-  onLogout,
-}: AppSidebarProps) {
-  return (
-    <aside className="app-sidebar">
-      <div className="app-sidebar-brand">
-        <button
-          type="button"
-          className="app-sidebar-brand-button"
-          aria-label="홈 화면으로 이동"
-          onClick={onGoHome}
-        >
-          <div className="reference-brand-mark app-sidebar-mark" aria-hidden="true">
-            <span />
-            <span />
-            <span />
-            <span />
-          </div>
-        </button>
-        <div>
-          <p className="marketing-kicker">{PRODUCT_BRAND_NAME}</p>
-          <h2>{PRODUCT_WORKSPACE_NAME}</h2>
-          <p className="muted-text">{journeyContext.sessionLabel} · {journeyContext.stageLabel}</p>
-        </div>
-      </div>
-
-      <nav className="app-sidebar-nav" aria-label="주요 메뉴">
-        {items.map((item) => {
-          const isActive = activePath === (item.activePath ?? item.path);
-
-          return (
-            <button
-              key={`${item.label}-${item.path}`}
-              type="button"
-              className={`app-sidebar-link ${isActive ? 'is-active' : ''}`}
-              disabled={item.disabled}
-              onClick={() => {
-                if (item.onClick) {
-                  item.onClick();
-                  return;
-                }
-
-                onNavigate(item.path);
-              }}
-            >
-              <span>{item.label}</span>
-            </button>
-          );
-        })}
-      </nav>
-
-      <div className="app-sidebar-footer">
-        <strong>{clinicianName}</strong>
-        <span>{journeyContext.caseId}</span>
-        <button type="button" className="secondary-button" onClick={onLogout}>
-          로그아웃
-        </button>
-      </div>
-    </aside>
-  );
+export function AppSidebar({ onStartAnalysis, onHome }: AppSidebarProps) {
+  return <aside className="app-sidebar">
+    <button className="app-sidebar-brand-button" type="button" onClick={onHome} aria-label="홈으로 이동">
+      <div className="reference-brand-mark" aria-hidden="true"><span /><span /><span /><span /></div>
+      <div><p className="marketing-kicker">LUAD AI</p><h2>Clinical Workspace</h2></div>
+    </button>
+    <nav className="app-sidebar-nav" aria-label="주요 메뉴">
+      <button className="app-sidebar-link" type="button" onClick={onHome}>소개</button>
+      <button className="app-sidebar-link" type="button" onClick={onStartAnalysis}>분석 시작</button>
+    </nav>
+  </aside>;
 }

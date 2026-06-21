@@ -5,6 +5,7 @@
 
 # Environments
 .venv/
+.model-test-venv/
 venv/
 env/
 ENV/

@@ -3,14 +3,6 @@ export type Variant = {
   variant_classification: string;
 };
 
-export type UploadPatientInput = {
-  deidentified_patient_id: string;
-  gene_variants: Variant[];
-  age?: number;
-  pathologic_stage?: string;
-  gender?: string;
-};
-
 export type NormalizedClinical = {
   age: number | null;
   pathologic_stage: string | null;
@@ -34,8 +26,13 @@ export type SurvivalCurve = {
   [key: string]: unknown;
 };
 
+export type ExpressionScores = {
+  stromal: number;
+  immune: number;
+};
+
 export type ResultEnvelope = {
-  result_version: 'v1';
+  result_version: 'v1' | 'v2';
   patient: {
     deidentified_patient_id: string;
   };
@@ -49,16 +46,15 @@ export type ResultEnvelope = {
     };
     artifacts: {
       survival_curve: SurvivalCurve | null;
+      model_scores?: Record<string, { raw: number; z_score: number }>;
+      ensemble_score?: number;
+      risk_group?: 'High' | 'Low';
+      risk_threshold?: number;
+      expression_scores?: ExpressionScores;
       [key: string]: unknown;
     };
   };
   warnings: string[];
-};
-
-export type ContractExamplesResponse = {
-  csv_example: string;
-  json_example: UploadPatientInput;
-  envelope_example: ResultEnvelope;
 };
 
 export type BackendErrorDetail = {
