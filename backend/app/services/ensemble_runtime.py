@@ -156,15 +156,11 @@ def clear_runtime_cache() -> None:
 
 
 def _cox_score(features: Sequence[float], coefficients: Sequence[float]) -> float:
-    linear_score = sum(
+    score = sum(
         feature * coefficient for feature, coefficient in zip(features, coefficients, strict=True)
     )
-    try:
-        score = math.exp(linear_score)
-    except OverflowError as exc:
-        raise _runtime_error("cox", "finite_exponential_score") from exc
     if not math.isfinite(score):
-        raise _runtime_error("cox", "finite_exponential_score")
+        raise _runtime_error("cox", "finite_linear_score")
     return score
 
 

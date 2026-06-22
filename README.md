@@ -23,7 +23,7 @@ backend/   FastAPI, 입력 검증, feature 생성, 모델 inference
 Browser
   → FastAPI /api/v1/inference/upload
   → 293개 feature 생성
-  → Cox + RSF + DeepSurv ensemble
+  → Cox 선형 점수 + RSF + DeepSurv ensemble
   → 분석 결과 JSON
 ```
 
@@ -48,6 +48,27 @@ model-artifacts/
 ```
 
 `rsf.model.pkl`은 pickle 기반 파일입니다. 신뢰할 수 있는 제작자로부터 받은 파일만 사용하세요.
+
+### 백엔드의 모델 파일 사용 방식
+
+백엔드는 사용자 브라우저에서 모델 파일을 받지 않습니다. `MODEL_ARTIFACT_DIR`로 지정한 서버 로컬 디렉터리에서 모델 artifact를 읽어 inference에 사용합니다.
+
+```text
+사용자 CSV 업로드
+  → FastAPI 백엔드
+  → MODEL_ARTIFACT_DIR의 모델 artifact 사용
+  → 분석 결과 JSON 반환
+```
+
+| 파일 | 역할 |
+|---|---|
+| `gene_coef.csv` | Cox 계수와 293개 feature 순서 |
+| `ensemble_stats.json` | Cox, RSF, DeepSurv 점수의 z-score 기준값 |
+| `km_data.csv` | High/Low 위험군 기준과 Kaplan–Meier 참조 데이터 |
+| `rsf.model.pkl` | Random Survival Forest 모델 |
+| `deepsurv_model.pt` | DeepSurv 모델 가중치 |
+
+RSF와 DeepSurv 모델은 백엔드 프로세스에서 처음 필요할 때 메모리에 로드하고 이후 요청에서는 재사용합니다.
 
 ## 실행
 
