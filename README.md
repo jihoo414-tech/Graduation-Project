@@ -82,7 +82,9 @@ python3 -m venv .venv
 source .venv/bin/activate
 pip install -e '.[dev]'
 
-export MODEL_ARTIFACT_DIR="/absolute/path/to/model-artifacts"
+# MODEL_ARTIFACT_DIR에는 5개 모델 파일이 있는 model-artifacts 디렉터리 경로를 지정합니다.
+# 위 프로젝트 구조처럼 저장했다면 backend 디렉터리 기준으로 ../model-artifacts 입니다.
+export MODEL_ARTIFACT_DIR="../model-artifacts"
 uvicorn app.main:app --reload
 ```
 
@@ -94,7 +96,9 @@ py -3.12 -m venv .venv
 .\.venv\Scripts\Activate.ps1
 pip install -e '.[dev]'
 
-$env:MODEL_ARTIFACT_DIR = "C:\absolute\path\to\model-artifacts"
+# MODEL_ARTIFACT_DIR에는 5개 모델 파일이 있는 model-artifacts 디렉터리 경로를 지정합니다.
+# 위 프로젝트 구조처럼 저장했다면 backend 디렉터리 기준으로 ..\model-artifacts 입니다.
+$env:MODEL_ARTIFACT_DIR = "..\model-artifacts"
 uvicorn app.main:app --reload
 ```
 
