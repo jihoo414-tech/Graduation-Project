@@ -6,14 +6,14 @@ type ResultPageProps = {
 };
 
 const formatScore = (value: number | undefined, digits = 4) =>
-  typeof value === 'number' ? value.toFixed(digits) : '산출되지 않음';
+  typeof value === 'number' ? value.toFixed(digits) : '계산되지 않음';
 
 const formatRiskGroup = (riskGroup: 'High' | 'Low' | undefined) =>
   riskGroup === 'High' ? 'High Risk' : riskGroup === 'Low' ? 'Low Risk' : '위험군 미분류';
 
 function SurvivalCurveChart({ curve }: { curve: SurvivalCurve | null }) {
   if (!curve || curve.points.length === 0) {
-    return <p className="muted-text">표시할 Kaplan–Meier 기준 곡선이 없습니다.</p>;
+    return <p className="muted-text">표시할 Kaplan-Meier 기준 곡선이 없습니다.</p>;
   }
 
   const points = [...curve.points].sort((left, right) => left.time - right.time);
@@ -48,14 +48,18 @@ function SurvivalCurveChart({ curve }: { curve: SurvivalCurve | null }) {
         {xTicks.map((time) => (
           <g key={time}>
             <line x1={toX(time)} x2={toX(time)} y1={height - padding.bottom} y2={height - padding.bottom + 5} />
-            <text x={toX(time)} y={height - padding.bottom + 19} textAnchor="middle">{time}일</text>
+            <text x={toX(time)} y={height - padding.bottom + 19} textAnchor="middle">
+              {time}일
+            </text>
           </g>
         ))}
         <path d={path} />
         {points.map((point) => (
           <circle key={`${point.time}-${point.survival_probability}`} cx={toX(point.time)} cy={toY(point.survival_probability)} r="3" />
         ))}
-        <text x={width / 2} y={height - 8} textAnchor="middle">Disease-Free Survival Time (days)</text>
+        <text x={width / 2} y={height - 8} textAnchor="middle">
+          Disease-Free Survival Time (days)
+        </text>
       </svg>
       <p className="muted-text">{curve.label}</p>
     </div>
@@ -104,7 +108,7 @@ export function ResultPage({ result, onBackToCases }: ResultPageProps) {
           <div>
             <div className="section-heading">
               <p className="workspace-page-kicker">Survival analysis</p>
-              <h2>Kaplan–Meier 생존 분석</h2>
+              <h2>Kaplan-Meier 생존 분석</h2>
             </div>
             <SurvivalCurveChart curve={artifacts.survival_curve} />
           </div>
@@ -112,13 +116,15 @@ export function ResultPage({ result, onBackToCases }: ResultPageProps) {
             <h3>위험군 기준</h3>
             {typeof artifacts.risk_threshold === 'number' ? (
               <p>
-                앙상블 점수가 <strong>{artifacts.risk_threshold.toFixed(4)}</strong> 이상이면 High Risk,
-                미만이면 Low Risk로 분류합니다.
+                앙상블 점수가 <strong>{artifacts.risk_threshold.toFixed(4)}</strong> 이상이면 High Risk, 미만이면 Low
+                Risk로 분류합니다.
               </p>
             ) : (
               <p>현재 결과는 위험군 기준값을 제공하지 않습니다.</p>
             )}
-            <p className="muted-text">곡선은 현재 환자의 개인 생존확률이 아니라, 동일 위험군 참조 코호트의 Kaplan–Meier 곡선입니다.</p>
+            <p className="muted-text">
+              곡선은 현재 환자의 개인 생존확률이 아니라, 동일 위험군 참조 코호트의 Kaplan-Meier 곡선입니다.
+            </p>
           </article>
         </section>
 
@@ -128,12 +134,30 @@ export function ResultPage({ result, onBackToCases }: ResultPageProps) {
             <h2>모델 입력 요약</h2>
           </div>
           <div className="input-summary-grid">
-            <article className="workspace-summary-card"><h3>나이</h3><strong>{clinical.age ?? '미입력'}세</strong></article>
-            <article className="workspace-summary-card"><h3>성별</h3><strong>{clinical.gender === 'male' ? '남성' : clinical.gender === 'female' ? '여성' : '미입력'}</strong></article>
-            <article className="workspace-summary-card"><h3>병기</h3><strong>{clinical.pathologic_stage ? `Stage ${clinical.pathologic_stage}` : '미입력'}</strong></article>
-            <article className="workspace-summary-card"><h3>변이 유전자 수</h3><strong>{result.normalized_input.gene_variants.length}개</strong></article>
-            <article className="workspace-summary-card"><h3>Stromal score</h3><strong>{formatScore(expressionScores?.stromal)}</strong></article>
-            <article className="workspace-summary-card"><h3>Immune score</h3><strong>{formatScore(expressionScores?.immune)}</strong></article>
+            <article className="workspace-summary-card">
+              <h3>나이</h3>
+              <strong>{clinical.age ? `${clinical.age}세` : '미입력'}</strong>
+            </article>
+            <article className="workspace-summary-card">
+              <h3>성별</h3>
+              <strong>{clinical.gender === 'male' ? '남성' : clinical.gender === 'female' ? '여성' : '미입력'}</strong>
+            </article>
+            <article className="workspace-summary-card">
+              <h3>병기</h3>
+              <strong>{clinical.pathologic_stage ? `Stage ${clinical.pathologic_stage}` : '미입력'}</strong>
+            </article>
+            <article className="workspace-summary-card">
+              <h3>변이 유전자 수</h3>
+              <strong>{result.normalized_input.gene_variants.length}개</strong>
+            </article>
+            <article className="workspace-summary-card">
+              <h3>Stromal score</h3>
+              <strong>{formatScore(expressionScores?.stromal)}</strong>
+            </article>
+            <article className="workspace-summary-card">
+              <h3>Immune score</h3>
+              <strong>{formatScore(expressionScores?.immune)}</strong>
+            </article>
           </div>
         </section>
       </section>

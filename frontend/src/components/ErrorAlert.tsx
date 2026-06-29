@@ -33,7 +33,7 @@ export function ErrorAlert({ code, message, details = [], onDismiss }: ErrorAler
       >
         <div className="error-panel-header">
           <div className="error-dialog-heading">
-            <h2 id="upload-error-title">업로드 오류</h2>
+            <h2 id="upload-error-title">요청 오류</h2>
             <p>{message}</p>
           </div>
         </div>
@@ -45,12 +45,12 @@ export function ErrorAlert({ code, message, details = [], onDismiss }: ErrorAler
             {details.map((detail, index) => (
               <li key={`${detail.field ?? 'detail'}-${detail.rule ?? 'rule'}-${index}`}>
                 <strong>{detail.field ?? 'unknown field'}</strong>
-                {detail.rule ? ` · ${detail.rule}` : ''}
+                {detail.rule ? ` - ${detail.rule}` : ''}
               </li>
             ))}
           </ul>
         ) : (
-          <p className="muted-text">백엔드가 필드 상세 정보를 반환하지 않았습니다.</p>
+          <p className="muted-text">서버가 필드별 상세 정보를 반환하지 않았습니다.</p>
         )}
 
         <div className="button-row">

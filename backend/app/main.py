@@ -4,7 +4,7 @@ import os
 from datetime import date
 from typing import Annotated
 
-from fastapi import FastAPI, File, Form, Request, UploadFile
+from fastapi import FastAPI, File, Form, Header, Request, UploadFile
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -20,6 +20,11 @@ from app.services.adapters import get_inference_adapter
 from app.services.errors import AppError, error_detail
 from app.services.feature_builder import build_model_patient
 from app.services.model_artifacts import artifact_paths_from_env
+from app.services.supabase import (
+    access_token_from_authorization,
+    save_analysis_result,
+    verify_supabase_user,
+)
 
 DEFAULT_DEV_CORS_ORIGINS = [
     "http://localhost:5173",
@@ -29,8 +34,10 @@ DEFAULT_DEV_CORS_ORIGINS = [
 ]
 ERROR_RESPONSES = {
     400: {"model": ErrorResponse},
+    401: {"model": ErrorResponse},
     415: {"model": ErrorResponse},
     422: {"model": ErrorResponse},
+    502: {"model": ErrorResponse},
     503: {"model": ErrorResponse},
 }
 
@@ -100,7 +107,10 @@ async def upload_inference(
     birth_date: Annotated[str, Form()],
     gender: Annotated[str, Form()],
     stage: Annotated[int, Form()],
+    authorization: Annotated[str | None, Header()] = None,
 ) -> InferenceSuccessResponse:
+    access_token = access_token_from_authorization(authorization)
+    user = verify_supabase_user(access_token)
     mutation_is_csv = (mutation_file.filename or "").lower().endswith(".csv")
     expression_is_csv = (expression_file.filename or "").lower().endswith(".csv")
     if not mutation_is_csv or not expression_is_csv:
@@ -135,4 +145,6 @@ async def upload_inference(
         stage=stage,
         paths=artifact_paths_from_env(),
     )
-    return get_inference_adapter().run(patient)
+    result = get_inference_adapter().run(patient)
+    save_analysis_result(access_token, user, result)
+    return result
