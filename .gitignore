@@ -25,6 +25,10 @@ coverage/
 .env.*
 !.env.example
 
+# Local model artifacts
+model-artifacts/
+backend/model-artifacts/
+
 # Editor / OS noise
 .vscode/
 .idea/

@@ -20,6 +20,7 @@ VITE_SUPABASE_ANON_KEY=your-supabase-anon-key
 ```text
 SUPABASE_URL=https://your-project.supabase.co
 SUPABASE_ANON_KEY=your-supabase-publishable-or-anon-key
+MODEL_ARTIFACT_DIR=model-artifacts
 ```
 
 운영체제 환경 변수로 설정한 값은 두 `.env` 파일의 값보다 우선합니다.
@@ -134,10 +135,10 @@ cd backend
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -e '.[dev]'
+cp .env.example .env
 
-# MODEL_ARTIFACT_DIR에는 모델 파일 5개가 있는 model-artifacts 디렉터리 경로를 지정합니다.
-# 위 프로젝트 구조처럼 저장했다면 backend 디렉터리 기준으로 ../model-artifacts입니다.
-export MODEL_ARTIFACT_DIR="../model-artifacts"
+# backend/model-artifacts에 모델 파일 5개를 넣었다면 기본값 그대로 사용합니다.
+# 다른 위치에 두었다면 .env의 MODEL_ARTIFACT_DIR을 그 디렉터리 경로로 바꿉니다.
 uvicorn app.main:app --reload
 ```
 
@@ -148,10 +149,10 @@ cd backend
 py -3.12 -m venv .venv
 .\.venv\Scripts\Activate.ps1
 pip install -e '.[dev]'
+copy .env.example .env
 
-# MODEL_ARTIFACT_DIR에는 모델 파일 5개가 있는 model-artifacts 디렉터리 경로를 지정합니다.
-# 위 프로젝트 구조처럼 저장했다면 backend 디렉터리 기준으로 ..\model-artifacts입니다.
-$env:MODEL_ARTIFACT_DIR = "..\model-artifacts"
+# backend\model-artifacts에 모델 파일 5개를 넣었다면 기본값 그대로 사용합니다.
+# 다른 위치에 두었다면 .env의 MODEL_ARTIFACT_DIR을 그 디렉터리 경로로 바꿉니다.
 uvicorn app.main:app --reload
 ```
 
