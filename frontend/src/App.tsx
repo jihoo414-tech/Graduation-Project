@@ -3,13 +3,15 @@ import type { Session } from '@supabase/supabase-js';
 import { AuthPage } from './components/AuthPage';
 import { ErrorAlert } from './components/ErrorAlert';
 import { AnalyzingPage } from './components/product/AnalyzingPage';
+import { AnalysisListPage } from './components/product/AnalysisListPage';
 import { AppSidebar } from './components/product/AppSidebar';
 import { ResultPage } from './components/product/ResultPage';
 import { normalizeUnknownError, uploadModelFiles } from './lib/api';
 import { isSupabaseConfigured, supabase } from './lib/supabase';
 import type { ResultEnvelope } from './lib/types';
 
-type Phase = 'dashboard' | 'input' | 'analyzing' | 'result';
+type Phase = 'dashboard' | 'list' | 'input' | 'analyzing' | 'result';
+type ResultBackTarget = 'analysis' | 'list';
 
 const currentYear = new Date().getFullYear();
 
@@ -26,6 +28,7 @@ export default function App() {
   const [gender, setGender] = useState('');
   const [stage, setStage] = useState('');
   const [result, setResult] = useState<ResultEnvelope | null>(null);
+  const [resultBackTarget, setResultBackTarget] = useState<ResultBackTarget>('analysis');
   const [error, setError] = useState<ReturnType<typeof normalizeUnknownError> | null>(null);
 
   useEffect(() => {
@@ -60,7 +63,25 @@ export default function App() {
     setGender('');
     setStage('');
     setResult(null);
+    setResultBackTarget('analysis');
     setError(null);
+  };
+
+  const showDashboard = () => {
+    setPhase('dashboard');
+    setError(null);
+  };
+
+  const showList = () => {
+    setPhase('list');
+    setError(null);
+  };
+
+  const openSavedResult = (savedResult: ResultEnvelope) => {
+    setResult(savedResult);
+    setResultBackTarget('list');
+    setError(null);
+    setPhase('result');
   };
 
   const continueToFiles = () => {
@@ -118,6 +139,7 @@ export default function App() {
         session.access_token,
       );
       setResult(response);
+      setResultBackTarget('analysis');
       setPhase('result');
     } catch (unknownError) {
       setError(normalizeUnknownError(unknownError));
@@ -160,13 +182,34 @@ export default function App() {
     return (
       <div className="authenticated-layout app-shell">
         <AppSidebar
-          active="dashboard"
+          active={resultBackTarget === 'list' ? 'list' : 'dashboard'}
           userEmail={session.user.email}
-          onDashboard={() => setPhase('result')}
+          onDashboard={showDashboard}
+          onList={showList}
           onStartAnalysis={resetAnalysis}
           onSignOut={signOut}
         />
-        <ResultPage result={result} onBackToCases={resetAnalysis} />
+        <ResultPage
+          result={result}
+          onBackToCases={resultBackTarget === 'list' ? showList : resetAnalysis}
+          backButtonLabel={resultBackTarget === 'list' ? '목록으로' : '새 분석'}
+        />
+      </div>
+    );
+  }
+
+  if (phase === 'list') {
+    return (
+      <div className="authenticated-layout app-shell">
+        <AppSidebar
+          active="list"
+          userEmail={session.user.email}
+          onDashboard={showDashboard}
+          onList={showList}
+          onStartAnalysis={resetAnalysis}
+          onSignOut={signOut}
+        />
+        <AnalysisListPage onOpenResult={openSavedResult} onStartAnalysis={resetAnalysis} />
       </div>
     );
   }
@@ -177,7 +220,8 @@ export default function App() {
         <AppSidebar
           active="dashboard"
           userEmail={session.user.email}
-          onDashboard={() => setPhase('dashboard')}
+          onDashboard={showDashboard}
+          onList={showList}
           onStartAnalysis={resetAnalysis}
           onSignOut={signOut}
         />
@@ -186,9 +230,14 @@ export default function App() {
             <p className="workspace-page-kicker">Dashboard</p>
             <h1>LUAD 생존 위험 분석</h1>
             <p>새 분석을 실행하면 결과가 Supabase 데이터베이스에 자동으로 저장됩니다.</p>
-            <button className="primary-button" type="button" onClick={resetAnalysis}>
-              분석 시작
-            </button>
+            <div className="button-row">
+              <button className="primary-button" type="button" onClick={resetAnalysis}>
+                분석 시작
+              </button>
+              <button className="secondary-button" type="button" onClick={showList}>
+                목록 보기
+              </button>
+            </div>
           </section>
         </main>
       </div>
@@ -200,7 +249,8 @@ export default function App() {
       <AppSidebar
         active="analysis"
         userEmail={session.user.email}
-        onDashboard={() => setPhase('dashboard')}
+        onDashboard={showDashboard}
+        onList={showList}
         onStartAnalysis={resetAnalysis}
         onSignOut={signOut}
       />

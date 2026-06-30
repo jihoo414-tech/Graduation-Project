@@ -64,7 +64,7 @@ LUAD(폐선암) 환자의 유전자 변이 정보와 RNA-seq 발현량을 바탕
 - 돌연변이 유무 CSV와 RNA-seq 발현량 CSV 업로드
 - Cox, Random Survival Forest, DeepSurv의 동일 가중치 앙상블
 - 모델별 원점수/z-점수, 위험군, Kaplan–Meier 참조 곡선 표시
-- 서버·DB 영구 저장 및 로그인 지원, 모의 모델은 포함하지 않음
+- 서버·DB 영구 저장, 로그인, 저장된 분석 결과 목록/검색 지원
 
 ## 구조
 

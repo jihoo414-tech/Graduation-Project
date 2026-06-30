@@ -778,6 +778,20 @@ strong {
   border-color: #111111;
 }
 
+.status-high {
+  background: #111111;
+  color: #f8fafc;
+  border-color: #111111;
+}
+
+.status-low {
+  background: rgba(255, 255, 255, 0.82);
+}
+
+.status-unknown {
+  color: var(--text-secondary);
+}
+
 .dashboard-side-panel {
   display: grid;
   gap: 16px;

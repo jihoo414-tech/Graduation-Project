@@ -3,6 +3,7 @@ import type { ResultEnvelope, SurvivalCurve } from '../../lib/types';
 type ResultPageProps = {
   result: ResultEnvelope;
   onBackToCases: () => void;
+  backButtonLabel?: string;
 };
 
 const formatScore = (value: number | undefined, digits = 4) =>
@@ -66,7 +67,7 @@ function SurvivalCurveChart({ curve }: { curve: SurvivalCurve | null }) {
   );
 }
 
-export function ResultPage({ result, onBackToCases }: ResultPageProps) {
+export function ResultPage({ result, onBackToCases, backButtonLabel = '새 분석' }: ResultPageProps) {
   const { artifacts, summary } = result.result;
   const clinical = result.normalized_input.clinical;
   const expressionScores = artifacts.expression_scores;
@@ -81,7 +82,7 @@ export function ResultPage({ result, onBackToCases }: ResultPageProps) {
             <p>환자별 앙상블 위험도와 생존 분석 정보를 한 화면에서 확인합니다.</p>
           </div>
           <button type="button" className="secondary-button" onClick={onBackToCases}>
-            새 분석
+            {backButtonLabel}
           </button>
         </header>
 

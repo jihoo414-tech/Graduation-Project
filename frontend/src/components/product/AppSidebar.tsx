@@ -1,12 +1,13 @@
 type AppSidebarProps = {
-  active: 'dashboard' | 'analysis';
+  active: 'dashboard' | 'list' | 'analysis';
   userEmail?: string;
   onStartAnalysis: () => void;
   onDashboard: () => void;
+  onList: () => void;
   onSignOut: () => void;
 };
 
-export function AppSidebar({ active, userEmail, onStartAnalysis, onDashboard, onSignOut }: AppSidebarProps) {
+export function AppSidebar({ active, userEmail, onStartAnalysis, onDashboard, onList, onSignOut }: AppSidebarProps) {
   return (
     <aside className="app-sidebar">
       <button className="app-sidebar-brand-button" type="button" onClick={onStartAnalysis} aria-label="분석 화면으로 이동">
@@ -25,6 +26,9 @@ export function AppSidebar({ active, userEmail, onStartAnalysis, onDashboard, on
       <nav className="app-sidebar-nav" aria-label="주요 메뉴">
         <button className={`app-sidebar-link ${active === 'dashboard' ? 'is-active' : ''}`} type="button" onClick={onDashboard}>
           대시보드
+        </button>
+        <button className={`app-sidebar-link ${active === 'list' ? 'is-active' : ''}`} type="button" onClick={onList}>
+          목록
         </button>
         <button className={`app-sidebar-link ${active === 'analysis' ? 'is-active' : ''}`} type="button" onClick={onStartAnalysis}>
           분석
