@@ -254,12 +254,12 @@ export default function App() {
         onStartAnalysis={resetAnalysis}
         onSignOut={signOut}
       />
-      <main className="product-shell authenticated-content">
-        <section className="workspace-page-shell">
+      <main className="product-shell authenticated-content analysis-page">
+        <section className="workspace-page-shell analysis-page-shell">
           <header className="workspace-page-header">
             <div>
-              <p className="workspace-page-kicker">LUAD survival analysis</p>
-              <h1>생존 위험 분석</h1>
+              <p className="workspace-page-kicker">Analysis</p>
+              <h1>새 분석</h1>
               <p>임상 정보와 CSV 파일을 입력하면 Cox, RSF, DeepSurv 앙상블 결과를 계산하고 저장합니다.</p>
             </div>
           </header>
@@ -267,6 +267,13 @@ export default function App() {
           <form className="upload-form" onSubmit={submit}>
             {inputStep === 1 ? (
               <>
+                <div className="analysis-step-banner">
+                  <span>01</span>
+                  <div>
+                    <strong>환자 임상 정보</strong>
+                    <p>생년월일, 성별, 병기를 먼저 입력해 모델 입력값을 구성합니다.</p>
+                  </div>
+                </div>
                 <div className="builder-form-grid">
                   <label>
                     <span>생년월일</span>
@@ -316,12 +323,24 @@ export default function App() {
                     </select>
                   </label>
                 </div>
-                <button className="primary-button" type="button" onClick={continueToFiles}>
-                  다음
-                </button>
+                <div className="button-row analysis-actions">
+                  <button className="primary-button" type="button" onClick={continueToFiles}>
+                    다음 단계
+                  </button>
+                  <button className="secondary-button" type="button" onClick={showList}>
+                    목록 보기
+                  </button>
+                </div>
               </>
             ) : (
               <>
+                <div className="analysis-step-banner">
+                  <span>02</span>
+                  <div>
+                    <strong>분석 파일 업로드</strong>
+                    <p>돌연변이 CSV와 RNA-seq CSV를 업로드하면 모델 분석을 실행합니다.</p>
+                  </div>
+                </div>
                 <div className="upload-page-grid">
                   <label className="file-dropzone">
                     <span>돌연변이 유전자 CSV</span>
@@ -349,7 +368,7 @@ export default function App() {
                 </p>
                 <div className="button-row">
                   <button className="primary-button" type="submit">
-                    실제 모델 분석 실행
+                    분석 실행
                   </button>
                   <button className="secondary-button" type="button" onClick={() => setInputStep(1)}>
                     이전
