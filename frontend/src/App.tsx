@@ -15,6 +15,18 @@ type ResultBackTarget = 'analysis' | 'list';
 
 const currentYear = new Date().getFullYear();
 
+function AuthLoadingPage() {
+  return (
+    <main className="app-shell auth-shell">
+      <section className="workspace-page-shell auth-panel">
+        <p className="workspace-page-kicker">Session check</p>
+        <h1>로그인 상태 확인 중</h1>
+        <p>저장된 로그인 세션을 확인하고 있습니다.</p>
+      </section>
+    </main>
+  );
+}
+
 export default function App() {
   const [session, setSession] = useState<Session | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
@@ -37,10 +49,17 @@ export default function App() {
       return;
     }
 
-    supabase.auth.getSession().then(({ data }) => {
-      setSession(data.session);
-      setAuthLoading(false);
-    });
+    supabase.auth
+      .getSession()
+      .then(({ data }) => {
+        setSession(data.session);
+      })
+      .catch(() => {
+        setSession(null);
+      })
+      .finally(() => {
+        setAuthLoading(false);
+      });
 
     const { data } = supabase.auth.onAuthStateChange((_event, nextSession) => {
       setSession(nextSession);
@@ -169,7 +188,7 @@ export default function App() {
   }
 
   if (authLoading) {
-    return <AnalyzingPage />;
+    return <AuthLoadingPage />;
   }
 
   if (!session) {
