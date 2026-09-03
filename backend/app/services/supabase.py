@@ -33,7 +33,10 @@ def _require_config() -> tuple[str, str]:
             status_code=503,
             code="SUPABASE_NOT_CONFIGURED",
             message="Supabase URL and anon key are required.",
-            details=[error_detail("SUPABASE_URL", "required"), error_detail("SUPABASE_ANON_KEY", "required")],
+            details=[
+                error_detail("SUPABASE_URL", "required"),
+                error_detail("SUPABASE_ANON_KEY", "required"),
+            ],
         )
     return url, anon_key
 
@@ -96,7 +99,9 @@ def verify_supabase_user(access_token: str) -> SupabaseUser:
     return SupabaseUser(id=user_id, email=payload.get("email"))
 
 
-def save_analysis_result(access_token: str, user: SupabaseUser, result: InferenceSuccessResponse) -> None:
+def save_analysis_result(
+    access_token: str, user: SupabaseUser, result: InferenceSuccessResponse
+) -> None:
     url, anon_key = _require_config()
     result_payload = result.model_dump(mode="json")
     artifacts = result.result.artifacts
@@ -107,7 +112,11 @@ def save_analysis_result(access_token: str, user: SupabaseUser, result: Inferenc
         "user_id": user.id,
         "patient_id": result.patient.deidentified_patient_id,
         "risk_group": artifacts.risk_group,
-        "risk_score": artifacts.ensemble_score if artifacts.ensemble_score is not None else result.result.summary.risk_score,
+        "risk_score": (
+            artifacts.ensemble_score
+            if artifacts.ensemble_score is not None
+            else result.result.summary.risk_score
+        ),
         "risk_threshold": artifacts.risk_threshold,
         "age": clinical.age,
         "gender": clinical.gender,
