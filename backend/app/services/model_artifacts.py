@@ -51,7 +51,12 @@ def artifact_paths_from_env() -> ModelArtifactPaths:
             details=[error_detail(MODEL_ARTIFACT_DIR_ENV, "required")],
         )
 
-    return ModelArtifactPaths.from_directory(configured_dir)
+    artifact_dir = Path(configured_dir).expanduser()
+    if not artifact_dir.is_absolute():
+        backend_dir = Path(__file__).resolve().parents[2]
+        artifact_dir = backend_dir / artifact_dir
+
+    return ModelArtifactPaths.from_directory(artifact_dir)
 
 
 def require_artifacts(

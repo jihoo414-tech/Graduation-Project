@@ -10,7 +10,8 @@ const hasValidSupabaseUrl = Boolean(
 );
 const hasValidAnonKey = Boolean(
   supabaseAnonKey &&
-    supabaseAnonKey !== 'your-supabase-anon-key',
+    supabaseAnonKey !== 'your-supabase-anon-key' &&
+    !supabaseAnonKey.startsWith('sb_secret_'),
 );
 
 export const isSupabaseConfigured = hasValidSupabaseUrl && hasValidAnonKey;

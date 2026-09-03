@@ -146,9 +146,10 @@ Windows PowerShell:
 
 ```powershell
 cd backend
-py -3.12 -m venv .venv
+py -3 -m venv .venv
 .\.venv\Scripts\Activate.ps1
-pip install -e '.[dev]'
+python -m pip install --upgrade pip setuptools wheel
+python -m pip install -e ".[dev]"
 copy .env.example .env
 
 # backend\model-artifacts에 모델 파일 5개를 넣었다면 기본값 그대로 사용합니다.
