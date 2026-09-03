@@ -3,17 +3,30 @@ import type { ResultEnvelope, SurvivalCurve } from '../../lib/types';
 type ResultPageProps = {
   result: ResultEnvelope;
   onBackToCases: () => void;
+  backButtonLabel?: string;
 };
 
 const formatScore = (value: number | undefined, digits = 4) =>
-  typeof value === 'number' ? value.toFixed(digits) : '산출되지 않음';
+  typeof value === 'number' ? value.toFixed(digits) : '계산되지 않음';
 
 const formatRiskGroup = (riskGroup: 'High' | 'Low' | undefined) =>
   riskGroup === 'High' ? 'High Risk' : riskGroup === 'Low' ? 'Low Risk' : '위험군 미분류';
 
+const formatGender = (gender: string | null) =>
+  gender === 'male' ? '남성' : gender === 'female' ? '여성' : '미입력';
+
+const riskBadgeClass = (riskGroup: 'High' | 'Low' | undefined) =>
+  riskGroup === 'High' ? 'risk-badge is-high' : riskGroup === 'Low' ? 'risk-badge is-low' : 'risk-badge';
+
+const riskMeterPosition = (score: number | undefined, threshold: number | undefined) => {
+  if (typeof score !== 'number' || typeof threshold !== 'number') return 50;
+  const spread = Math.max(Math.abs(threshold) * 2, 2);
+  return Math.max(4, Math.min(96, 50 + ((score - threshold) / spread) * 50));
+};
+
 function SurvivalCurveChart({ curve }: { curve: SurvivalCurve | null }) {
   if (!curve || curve.points.length === 0) {
-    return <p className="muted-text">표시할 Kaplan–Meier 기준 곡선이 없습니다.</p>;
+    return <p className="muted-text">표시할 Kaplan-Meier 기준 곡선이 없습니다.</p>;
   }
 
   const points = [...curve.points].sort((left, right) => left.time - right.time);
@@ -48,24 +61,31 @@ function SurvivalCurveChart({ curve }: { curve: SurvivalCurve | null }) {
         {xTicks.map((time) => (
           <g key={time}>
             <line x1={toX(time)} x2={toX(time)} y1={height - padding.bottom} y2={height - padding.bottom + 5} />
-            <text x={toX(time)} y={height - padding.bottom + 19} textAnchor="middle">{time}일</text>
+            <text x={toX(time)} y={height - padding.bottom + 19} textAnchor="middle">
+              {time}일
+            </text>
           </g>
         ))}
         <path d={path} />
         {points.map((point) => (
           <circle key={`${point.time}-${point.survival_probability}`} cx={toX(point.time)} cy={toY(point.survival_probability)} r="3" />
         ))}
-        <text x={width / 2} y={height - 8} textAnchor="middle">Disease-Free Survival Time (days)</text>
+        <text x={width / 2} y={height - 8} textAnchor="middle">
+          Disease-Free Survival Time (days)
+        </text>
       </svg>
       <p className="muted-text">{curve.label}</p>
     </div>
   );
 }
 
-export function ResultPage({ result, onBackToCases }: ResultPageProps) {
+export function ResultPage({ result, onBackToCases, backButtonLabel = '새 분석' }: ResultPageProps) {
   const { artifacts, summary } = result.result;
   const clinical = result.normalized_input.clinical;
   const expressionScores = artifacts.expression_scores;
+  const ensembleScore = artifacts.ensemble_score ?? summary.risk_score;
+  const coxScore = artifacts.model_scores?.cox?.z_score ?? artifacts.model_scores?.cox?.raw;
+  const meterPosition = riskMeterPosition(ensembleScore, artifacts.risk_threshold);
 
   return (
     <main className="product-shell authenticated-content">
@@ -77,63 +97,107 @@ export function ResultPage({ result, onBackToCases }: ResultPageProps) {
             <p>환자별 앙상블 위험도와 생존 분석 정보를 한 화면에서 확인합니다.</p>
           </div>
           <button type="button" className="secondary-button" onClick={onBackToCases}>
-            새 분석
+            {backButtonLabel}
           </button>
         </header>
 
-        <section className="result-hero-grid" aria-label="분석 결과 요약">
+        <section className="result-hero-grid dashboard-card-grid" aria-label="분석 결과 요약">
           <article className="result-hero-card">
-            <span>비식별 환자 ID</span>
-            <strong>{result.patient.deidentified_patient_id}</strong>
+            <span>환자 ID</span>
+            <strong className="accent-text">{result.patient.deidentified_patient_id}</strong>
           </article>
           <article className={`result-hero-card risk-${artifacts.risk_group?.toLowerCase() ?? 'unknown'}`}>
-            <span>앙상블 위험군</span>
-            <strong>{formatRiskGroup(artifacts.risk_group)}</strong>
+            <span>위험도 분류</span>
+            <strong className={riskBadgeClass(artifacts.risk_group)}>{formatRiskGroup(artifacts.risk_group)}</strong>
           </article>
           <article className="result-hero-card">
-            <span>앙상블 점수</span>
-            <strong>{formatScore(artifacts.ensemble_score ?? summary.risk_score)}</strong>
+            <span>위험도 점수</span>
+            <strong>{formatScore(ensembleScore)}</strong>
           </article>
         </section>
 
         <p className="clinical-disclaimer">
-          이 결과는 임상 의사결정 보조용 위험 예측 정보이며, 진단 또는 치료 결정을 대체하지 않습니다.
+          이 결과는 보조적 위험 예측 정보입니다. 최종 진단 또는 치료 결정은 의료진과 상의하세요.
         </p>
 
         <section className="result-section result-section-grid dashboard-chart-grid">
-          <div>
+          <article className="dashboard-main-panel chart-panel">
             <div className="section-heading">
               <p className="workspace-page-kicker">Survival analysis</p>
-              <h2>Kaplan–Meier 생존 분석</h2>
+              <h2>Kaplan-Meier 생존 분석</h2>
             </div>
             <SurvivalCurveChart curve={artifacts.survival_curve} />
-          </div>
-          <article className="threshold-card">
-            <h3>위험군 기준</h3>
+          </article>
+          <article className="threshold-card risk-standard-card">
+            <div className="section-heading compact-heading">
+              <p className="workspace-page-kicker">Risk standard</p>
+              <h2>위험도 기준</h2>
+            </div>
+            <dl className="risk-standard-list">
+              <div>
+                <dt>Cox 기준점</dt>
+                <dd>{formatScore(coxScore)}</dd>
+              </div>
+              <div>
+                <dt>앙상블 점수</dt>
+                <dd>{formatScore(ensembleScore)}</dd>
+              </div>
+              <div>
+                <dt>위험군</dt>
+                <dd>
+                  <span className={riskBadgeClass(artifacts.risk_group)}>{formatRiskGroup(artifacts.risk_group)}</span>
+                </dd>
+              </div>
+            </dl>
             {typeof artifacts.risk_threshold === 'number' ? (
-              <p>
-                앙상블 점수가 <strong>{artifacts.risk_threshold.toFixed(4)}</strong> 이상이면 High Risk,
-                미만이면 Low Risk로 분류합니다.
-              </p>
+              <>
+                <p>
+                  기준점 <strong>{artifacts.risk_threshold.toFixed(4)}</strong> 이상은 High Risk, 미만은 Low Risk입니다.
+                </p>
+                <div className="risk-meter" aria-label="위험도 기준 막대">
+                  <span className="risk-meter-pointer" style={{ left: `${meterPosition}%` }} />
+                </div>
+                <div className="risk-meter-labels">
+                  <span>Low Risk</span>
+                  <span>High Risk</span>
+                </div>
+              </>
             ) : (
               <p>현재 결과는 위험군 기준값을 제공하지 않습니다.</p>
             )}
-            <p className="muted-text">곡선은 현재 환자의 개인 생존확률이 아니라, 동일 위험군 참조 코호트의 Kaplan–Meier 곡선입니다.</p>
           </article>
         </section>
 
         <section className="result-section">
           <div className="section-heading">
-            <p className="workspace-page-kicker">Input summary</p>
+            <p className="workspace-page-kicker">Model inputs summary</p>
             <h2>모델 입력 요약</h2>
           </div>
           <div className="input-summary-grid">
-            <article className="workspace-summary-card"><h3>나이</h3><strong>{clinical.age ?? '미입력'}세</strong></article>
-            <article className="workspace-summary-card"><h3>성별</h3><strong>{clinical.gender === 'male' ? '남성' : clinical.gender === 'female' ? '여성' : '미입력'}</strong></article>
-            <article className="workspace-summary-card"><h3>병기</h3><strong>{clinical.pathologic_stage ? `Stage ${clinical.pathologic_stage}` : '미입력'}</strong></article>
-            <article className="workspace-summary-card"><h3>변이 유전자 수</h3><strong>{result.normalized_input.gene_variants.length}개</strong></article>
-            <article className="workspace-summary-card"><h3>Stromal score</h3><strong>{formatScore(expressionScores?.stromal)}</strong></article>
-            <article className="workspace-summary-card"><h3>Immune score</h3><strong>{formatScore(expressionScores?.immune)}</strong></article>
+            <article className="workspace-summary-card">
+              <h3>나이</h3>
+              <strong>{clinical.age ? `${clinical.age}세` : '미입력'}</strong>
+            </article>
+            <article className="workspace-summary-card">
+              <h3>성별</h3>
+              <strong>{formatGender(clinical.gender)}</strong>
+            </article>
+            <article className="workspace-summary-card">
+              <h3>병기</h3>
+              <strong>{clinical.pathologic_stage ? `Stage ${clinical.pathologic_stage}` : '미입력'}</strong>
+            </article>
+            <article className="workspace-summary-card">
+              <h3>변이 유전자 수</h3>
+              <strong>{result.normalized_input.gene_variants.length}개</strong>
+            </article>
+            <article className="workspace-summary-card">
+              <h3>Stromal score</h3>
+              <strong>{formatScore(expressionScores?.stromal)}</strong>
+            </article>
+            <article className="workspace-summary-card">
+              <h3>Immune score</h3>
+              <strong>{formatScore(expressionScores?.immune)}</strong>
+            </article>
           </div>
         </section>
       </section>

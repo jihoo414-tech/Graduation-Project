@@ -3,11 +3,11 @@ from __future__ import annotations
 import csv
 import json
 import math
-import os
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from app.config import get_setting
 from app.services.errors import AppError, error_detail
 
 MODEL_ARTIFACT_DIR_ENV = "MODEL_ARTIFACT_DIR"
@@ -42,7 +42,7 @@ class ModelArtifactPaths:
 
 
 def artifact_paths_from_env() -> ModelArtifactPaths:
-    configured_dir = os.getenv(MODEL_ARTIFACT_DIR_ENV, "").strip()
+    configured_dir = get_setting(MODEL_ARTIFACT_DIR_ENV)
     if not configured_dir:
         raise AppError(
             status_code=500,

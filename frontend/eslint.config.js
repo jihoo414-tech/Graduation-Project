@@ -28,14 +28,4 @@ export default tseslint.config(
       'no-undef': 'off',
     },
   },
-  {
-    files: ['*.config.ts', 'vite.config.ts', 'vitest.config.ts'],
-    languageOptions: {
-      ecmaVersion: 'latest',
-      sourceType: 'module',
-      globals: {
-        ...globals.node,
-      },
-    },
-  },
 );
