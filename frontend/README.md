@@ -1,0 +1,71 @@
+# Frontend
+
+React와 TypeScript를 사용하며, 기능별로 관련 코드를 모으는 구조입니다. 페이지 이름을 먼저 찾고 같은 기능 폴더 안에서 상태 처리와 API를 따라갈 수 있습니다.
+
+## 디렉터리 구조
+
+```text
+src/
+  main.tsx                    # React 실행 진입점
+  app/
+    App.tsx                   # 로그인 상태와 화면 전환 연결
+    layout/                   # 공통 사이드바와 로그인 후 레이아웃
+    config/                   # 앱 전체 제품 설정
+  features/
+    auth/
+      api/                    # Supabase 인증 클라이언트
+      hooks/                  # 로그인 세션과 인증 폼 상태
+      pages/                  # 로그인·회원가입 화면
+      components/             # 세션 확인·설정 안내 화면
+    analysis/
+      api/                    # 분석 업로드와 저장 결과 조회
+      hooks/                  # 분석 진행 상태와 목록 조회 상태
+      pages/                  # 입력·진행 중·목록·결과 화면
+      components/             # 입력 단계·목록 항목·차트
+      model/                  # 요청·응답 타입, 입력 검증, 검색 로직
+  shared/
+    api/                      # 공통 HTTP 처리와 에러 메시지 변환
+    types/                    # 기능 간 공통 역할 타입
+    ui/                       # 기능에 종속되지 않는 공통 UI
+    styles/                   # 기존 전역 스타일
+  test/                       # 공통 테스트 설정
+```
+
+## 파일을 찾는 방법
+
+| 변경할 내용 | 위치 |
+| --- | --- |
+| 로그인·회원가입 화면 | features/auth/pages/AuthPage.tsx |
+| 로그인 유지와 로그아웃 | features/auth/hooks/useAuthSession.ts |
+| 분석 화면 전환과 입력 초기화 | features/analysis/hooks/useAnalysisWorkflow.ts |
+| 입력 항목과 파일 업로드 UI | features/analysis/components/ClinicalStep.tsx, FileUploadStep.tsx |
+| 대시보드의 저장 결과 목록 | features/analysis/pages/AnalysisListPage.tsx |
+| 분석 결과 상세 화면과 차트 | features/analysis/pages/ResultPage.tsx, components/SurvivalCurveChart.tsx |
+| 백엔드 요청 경로·파일 전송 | features/analysis/api/ |
+| 요청·응답 데이터 필드 | features/analysis/model/request.ts, result.ts, savedResults.ts |
+| 공통 네트워크 에러 처리 | shared/api/ |
+
+## 분리 기준
+
+`app`은 기능을 연결하고 `features`는 각 기능의 화면과 동작을 담당합니다. `shared`는 특정 기능을 알지 못하는 공통 코드만 담습니다. 인증과 분석 기능은 서로 직접 import하지 않고 App이 토큰과 콜백을 전달합니다.
+
+ESLint는 shared가 app·features를 참조하거나 features가 app을 참조하는 역방향 의존성을 검사합니다.
+
+`pages`는 화면 배치, `components`는 화면의 일부, `hooks`는 상태와 사용자 동작, `api`는 서버 통신, `model`은 타입과 순수 계산을 담당합니다. 작은 컴포넌트의 props 타입은 해당 파일에 두고 요청·응답 계약만 model에서 관리합니다. 폴더별 index.ts 재수출을 만들지 않고 실제 파일을 직접 import합니다.
+
+분석 입력 상태는 화면이 바뀌어도 App에 연결된 훅에 남습니다. 새 분석과 로그아웃 시 초기화하며, 결과 화면에서 돌아가는 위치도 기존 동작을 유지합니다. API 경로·폼 필드·인증 토큰 전달 방식은 그대로입니다.
+
+스타일은 shared/styles/global.css로 이동하면서 내용과 적용 순서를 유지했습니다. 기존 CSS에는 여러 번 덮어쓰는 규칙이 있어, 이번 구조 변경에서는 기능별로 재배치하지 않았습니다. 새 기능의 전용 스타일은 해당 기능에 두되 기존 전역 규칙에 미치는 영향을 확인합니다.
+
+테스트는 검증 대상 가까이에 둡니다. App.workflow.test.tsx는 분석 실행·오류 복구·저장 결과 열기·로그아웃 흐름을 검증합니다. HTTP와 Supabase는 테스트에서 대체하며 실제 계정이나 저장 데이터에 영향을 주지 않습니다.
+
+## 실행과 검증
+
+frontend 디렉터리에서 실행합니다. 기존 .env 설정을 그대로 사용합니다.
+
+```bash
+npm run dev
+npm run lint
+npm test
+npm run build
+```

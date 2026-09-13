@@ -4,10 +4,10 @@ from pathlib import Path
 
 import pytest
 
-from app.services.errors import AppError
-from app.services.expression_scores import ExpressionScores
-from app.services.feature_builder import build_model_patient
-from app.services.model_artifacts import ModelArtifactPaths
+from app.common.exceptions import AppError
+from app.repository.model_artifacts import ModelArtifactPaths
+from app.service.inference.expression_scores import ExpressionScores
+from app.service.inference.feature_builder import build_model_patient
 
 MISSING_GENES = ["ADAM21P1", "BAGE2", "MALAT1", "RP11-193H5.1", "SSPO", "G282"]
 
