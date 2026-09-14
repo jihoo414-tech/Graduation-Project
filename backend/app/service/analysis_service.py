@@ -8,27 +8,39 @@ from app.repository import analysis_repository
 
 
 def fetch_analysis_results(access_token: str, user: SupabaseUser) -> AnalysisResultsResponse:
-    user_id = None if user.role in CLINICAL_ROLES else user.id
-    rows = analysis_repository.fetch_analysis_results(access_token, user_id=user_id)
+    patient_user_id = None if user.role in CLINICAL_ROLES else user.id
+    rows = analysis_repository.fetch_analysis_results(
+        access_token, patient_user_id=patient_user_id
+    )
     items = [_analysis_result_item(row, user.role) for row in rows if isinstance(row, dict)]
     return AnalysisResultsResponse(viewerRole=user.role, items=items)
 
 
 def save_analysis_result(
-    access_token: str, user: SupabaseUser, result: InferenceSuccessResponse
+    access_token: str,
+    user: SupabaseUser,
+    patient_user_id: str,
+    result: InferenceSuccessResponse,
 ) -> None:
-    analysis_repository.save_analysis_result(access_token, _analysis_result_row(user, result))
+    analysis_repository.save_analysis_result(
+        access_token, _analysis_result_row(user, patient_user_id, result)
+    )
 
 
-def _analysis_result_row(user: SupabaseUser, result: InferenceSuccessResponse) -> dict[str, Any]:
+def _analysis_result_row(
+    user: SupabaseUser, patient_user_id: str, result: InferenceSuccessResponse
+) -> dict[str, Any]:
     result_payload = result.model_dump(mode="json")
     artifacts = result.result.artifacts
     clinical = result.normalized_input.clinical
     expression_scores = artifacts.expression_scores
 
     return {
-        "user_id": user.id,
-        "patient_id": result.patient.deidentified_patient_id,
+        # Legacy columns remain populated while clients migrate to the explicit ownership fields.
+        "user_id": patient_user_id,
+        "patient_id": patient_user_id,
+        "patient_user_id": patient_user_id,
+        "created_by": user.id,
         "risk_group": artifacts.risk_group,
         "risk_score": (
             artifacts.ensemble_score
@@ -52,10 +64,11 @@ def _analysis_result_row(user: SupabaseUser, result: InferenceSuccessResponse) -
 
 def _analysis_result_item(row: dict[str, Any], role: UserRole) -> AnalysisResultListItem:
     result_payload = row.get("result_payload")
+    patient_user_id = row.get("patient_user_id") or row.get("patient_id")
     return AnalysisResultListItem(
         id=str(row["id"]),
         createdAt=str(row["created_at"]),
-        patientId=str(row["patient_id"]) if role in CLINICAL_ROLES else None,
+        patientId=str(patient_user_id) if role in CLINICAL_ROLES else None,
         riskGroup=row.get("risk_group"),
         riskScore=row.get("risk_score"),
         age=row.get("age"),
@@ -78,5 +91,6 @@ def _visible_result_payload(payload: Any, role: UserRole) -> dict[str, Any] | No
     visible_payload.get("result", {}).get("artifacts", {}).pop("expression_scores", None)
     visible_payload.get("result", {}).get("artifacts", {}).pop("artifact_manifest_digest", None)
     visible_payload.get("normalized_input", {}).pop("gene_variants", None)
+    visible_payload.get("normalized_input", {}).pop("deidentified_patient_id", None)
     visible_payload.get("patient", {}).pop("deidentified_patient_id", None)
     return visible_payload

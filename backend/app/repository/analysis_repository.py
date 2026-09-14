@@ -11,6 +11,8 @@ ANALYSIS_RESULT_COLUMNS = [
     "created_at",
     "user_id",
     "patient_id",
+    "patient_user_id",
+    "created_by",
     "risk_group",
     "risk_score",
     "age",
@@ -61,14 +63,16 @@ def save_analysis_result(access_token: str, row: dict[str, Any]) -> None:
         ) from exc
 
 
-def fetch_analysis_results(access_token: str, *, user_id: str | None) -> list[dict[str, Any]]:
+def fetch_analysis_results(
+    access_token: str, *, patient_user_id: str | None
+) -> list[dict[str, Any]]:
     query_values = {
         "select": ",".join(ANALYSIS_RESULT_COLUMNS),
         "order": "created_at.desc,id.desc",
         "limit": "100",
     }
-    if user_id is not None:
-        query_values["user_id"] = f"eq.{user_id}"
+    if patient_user_id is not None:
+        query_values["patient_user_id"] = f"eq.{patient_user_id}"
 
     try:
         rows = []

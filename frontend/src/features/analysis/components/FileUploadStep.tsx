@@ -25,25 +25,28 @@ export function FileUploadStep({
       <div className="upload-page-grid">
         <label className="file-dropzone">
           <span>돌연변이 유전자 CSV</span>
+          <small>CSV 파일을 선택해 주세요.</small>
           <input
             aria-label="돌연변이 유전자 CSV"
             type="file"
             accept=".csv,text/csv"
             onChange={(event) => onMutationFileChange(event.target.files?.[0] ?? null)}
           />
-          {mutationFile && <strong>{mutationFile.name}</strong>}
+          {mutationFile && <strong title={mutationFile.name}>{mutationFile.name}</strong>}
         </label>
         <label className="file-dropzone">
           <span>RNA-seq 발현량 CSV</span>
+          <small>CSV 파일을 선택해 주세요.</small>
           <input
             aria-label="RNA-seq 발현량 CSV"
             type="file"
             accept=".csv,text/csv"
             onChange={(event) => onExpressionFileChange(event.target.files?.[0] ?? null)}
           />
-          {expressionFile && <strong>{expressionFile.name}</strong>}
+          {expressionFile && <strong title={expressionFile.name}>{expressionFile.name}</strong>}
         </label>
       </div>
+      <p className="upload-requirement">두 CSV 파일을 모두 선택해 주세요.</p>
       <p className="clinical-disclaimer">
         이 결과는 임상 의사결정 보조용 위험 예측 정보이며, 진단 또는 치료 결정을 대체하지 않습니다.
       </p>

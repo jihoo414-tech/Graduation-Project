@@ -7,10 +7,16 @@ type AnalysisListPageProps = {
   accessToken: string;
   onOpenResult: (result: ResultEnvelope) => void;
   onStartAnalysis: () => void;
+  canStartAnalysis?: boolean;
 };
 
 
-export function AnalysisListPage({ accessToken, onOpenResult, onStartAnalysis }: AnalysisListPageProps) {
+export function AnalysisListPage({
+  accessToken,
+  onOpenResult,
+  onStartAnalysis,
+  canStartAnalysis = true,
+}: AnalysisListPageProps) {
   const { items, viewerRole, query, setQuery, loading, error, loadResults, filteredItems, highRiskCount, lowRiskCount } = useAnalysisResults(accessToken);
   return (
     <main className="product-shell authenticated-content">
@@ -18,16 +24,22 @@ export function AnalysisListPage({ accessToken, onOpenResult, onStartAnalysis }:
         <header className="workspace-page-header">
           <div>
             <p className="workspace-page-kicker">Dashboard</p>
-            <h1>LUAD 생존 위험 분석</h1>
-            <p>새 분석을 시작하면, 데이터베이스에 자동으로 저장됩니다.</p>
+            <h1>대시보드</h1>
+            <p>
+              {canStartAnalysis
+                ? '새 분석을 시작하면, 데이터베이스에 자동으로 저장됩니다.'
+                : '담당 의료진이 등록한 분석 결과를 확인합니다.'}
+            </p>
           </div>
           <div className="dashboard-panel-actions">
             <button className="secondary-button dashboard-new-case-button" type="button" onClick={loadResults} disabled={loading}>
               새로고침
             </button>
-            <button className="primary-button dashboard-new-case-button" type="button" onClick={onStartAnalysis}>
-              새 분석
-            </button>
+            {canStartAnalysis ? (
+              <button className="primary-button dashboard-new-case-button" type="button" onClick={onStartAnalysis}>
+                새 분석
+              </button>
+            ) : null}
           </div>
         </header>
 
@@ -46,7 +58,9 @@ export function AnalysisListPage({ accessToken, onOpenResult, onStartAnalysis }:
             <input
               className="search-input"
               aria-label="분석 결과 검색"
-              placeholder="환자 ID, 위험군, 병기, 성별 검색"
+              placeholder={viewerRole === 'patient'
+                ? '위험군, 병기, 성별 검색'
+                : '환자 ID, 위험군, 병기, 성별 검색'}
               value={query}
               onChange={(event) => setQuery(event.target.value)}
             />
@@ -65,8 +79,12 @@ export function AnalysisListPage({ accessToken, onOpenResult, onStartAnalysis }:
 
           {!loading && !error && filteredItems.length === 0 ? (
             <div className="workspace-inline-output">
-              <p>{items.length === 0 ? '아직 저장된 분석 결과가 없습니다.' : '검색 조건에 맞는 결과가 없습니다.'}</p>
-              {items.length === 0 ? (
+              <p>
+                {items.length === 0
+                  ? '아직 등록된 분석 결과가 없습니다. 담당 의료진이 분석 결과를 등록하면 이곳에서 확인할 수 있습니다.'
+                  : '검색 조건에 맞는 결과가 없습니다.'}
+              </p>
+              {items.length === 0 && canStartAnalysis ? (
                 <button className="primary-button dashboard-new-case-button" type="button" onClick={onStartAnalysis}>
                   첫 분석 시작
                 </button>

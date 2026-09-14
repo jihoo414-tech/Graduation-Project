@@ -34,6 +34,9 @@ export function ResultPage({ result, onBackToCases, backButtonLabel = '새 분�
   const meterPosition = riskMeterPosition(ensembleScore, artifacts.risk_threshold);
   const patientId = result.patient.deidentified_patient_id ?? '내 분석 결과';
   const variantCount = result.normalized_input.gene_variants?.length;
+  const hasClinicalDetails = patientId !== '내 분석 결과';
+  const hasModelDetails = Boolean(artifacts.model_scores || typeof artifacts.risk_threshold === 'number');
+  const hasExpressionScores = Boolean(expressionScores);
 
   return (
     <main className="product-shell authenticated-content">
@@ -41,8 +44,8 @@ export function ResultPage({ result, onBackToCases, backButtonLabel = '새 분�
         <header className="workspace-page-header result-page-header">
           <div>
             <p className="workspace-page-kicker">Dashboard</p>
-            <h1>분석 결과 대시보드</h1>
-            <p>환자별 앙상블 위험도와 생존 분석 정보를 한 화면에서 확인합니다.</p>
+            <h1>분석 결과</h1>
+            <p>앙상블 위험도와 집단 기준 생존 분석 정보를 확인합니다.</p>
           </div>
           <button type="button" className="secondary-button" onClick={onBackToCases}>
             {backButtonLabel}
@@ -50,10 +53,12 @@ export function ResultPage({ result, onBackToCases, backButtonLabel = '새 분�
         </header>
 
         <section className="result-hero-grid dashboard-card-grid" aria-label="분석 결과 요약">
-          <article className="result-hero-card">
-            <span>환자 ID</span>
-            <strong className="accent-text">{patientId}</strong>
-          </article>
+          {hasClinicalDetails ? (
+            <article className="result-hero-card">
+              <span>환자 ID</span>
+              <strong className="accent-text">{patientId}</strong>
+            </article>
+          ) : null}
           <article className={`result-hero-card risk-${artifacts.risk_group?.toLowerCase() ?? 'unknown'}`}>
             <span>위험도 분류</span>
             <strong className={riskBadgeClass(artifacts.risk_group)}>{formatRiskGroup(artifacts.risk_group)}</strong>
@@ -72,11 +77,11 @@ export function ResultPage({ result, onBackToCases, backButtonLabel = '새 분�
           <article className="dashboard-main-panel chart-panel">
             <div className="section-heading">
               <p className="workspace-page-kicker">Survival analysis</p>
-              <h2>Kaplan-Meier 생존 분석</h2>
+              <h2>집단 기준 생존 곡선</h2>
             </div>
             <SurvivalCurveChart curve={artifacts.survival_curve} />
           </article>
-          <article className="threshold-card risk-standard-card">
+          {hasModelDetails ? <article className="threshold-card risk-standard-card">
             <div className="section-heading compact-heading">
               <p className="workspace-page-kicker">Risk standard</p>
               <h2>위험도 기준</h2>
@@ -113,7 +118,7 @@ export function ResultPage({ result, onBackToCases, backButtonLabel = '새 분�
             ) : (
               <p>현재 결과는 위험군 기준값을 제공하지 않습니다.</p>
             )}
-          </article>
+          </article> : null}
         </section>
 
         <section className="result-section">
@@ -134,18 +139,24 @@ export function ResultPage({ result, onBackToCases, backButtonLabel = '새 분�
               <h3>병기</h3>
               <strong>{clinical.pathologic_stage ? `Stage ${clinical.pathologic_stage}` : '미입력'}</strong>
             </article>
-            <article className="workspace-summary-card">
-              <h3>변이 유전자 수</h3>
-              <strong>{typeof variantCount === 'number' ? `${variantCount}개` : '비공개'}</strong>
-            </article>
-            <article className="workspace-summary-card">
-              <h3>Stromal score</h3>
-              <strong>{formatScore(expressionScores?.stromal)}</strong>
-            </article>
-            <article className="workspace-summary-card">
-              <h3>Immune score</h3>
-              <strong>{formatScore(expressionScores?.immune)}</strong>
-            </article>
+            {typeof variantCount === 'number' ? (
+              <article className="workspace-summary-card">
+                <h3>변이 유전자 수</h3>
+                <strong>{variantCount}개</strong>
+              </article>
+            ) : null}
+            {hasExpressionScores ? (
+              <>
+                <article className="workspace-summary-card">
+                  <h3>Stromal score</h3>
+                  <strong>{formatScore(expressionScores?.stromal)}</strong>
+                </article>
+                <article className="workspace-summary-card">
+                  <h3>Immune score</h3>
+                  <strong>{formatScore(expressionScores?.immune)}</strong>
+                </article>
+              </>
+            ) : null}
           </div>
         </section>
       </section>

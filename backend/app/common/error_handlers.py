@@ -35,6 +35,7 @@ SERVER_ERROR_MESSAGE = (
 ERROR_RESPONSES = {
     400: {"model": ErrorMessageResponse},
     401: {"model": ErrorMessageResponse},
+    403: {"model": ErrorMessageResponse},
     415: {"model": ErrorMessageResponse},
     422: {"model": ErrorMessageResponse},
     502: {"model": ErrorMessageResponse},

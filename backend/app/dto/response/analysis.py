@@ -27,3 +27,19 @@ class AnalysisResultsResponse(BaseModel):
 
     viewerRole: UserRole
     items: list[AnalysisResultListItem]
+
+
+class PatientListItem(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    id: str
+    createdAt: str
+    lastAnalysisAt: str | None = None
+    latestRiskGroup: Literal["High", "Low"] | None = None
+    resultCount: int = 0
+
+
+class PatientListResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    items: list[PatientListItem]

@@ -1,14 +1,33 @@
 import { useAuthForm } from '../hooks/useAuthForm';
+import type { AuthPortal } from '../../../shared/types/auth';
 
-export function AuthPage() {
-  const { mode, email, setEmail, password, setPassword, message, submitting, submit, switchMode } = useAuthForm();
+type AuthPageProps = {
+  portal?: AuthPortal;
+  initialMessage?: string;
+  onBack?: () => void;
+};
+
+export function AuthPage({
+  portal = 'patient',
+  initialMessage = '',
+  onBack,
+}: AuthPageProps) {
+  const { mode, email, setEmail, password, setPassword, message, submitting, submit, switchMode } =
+    useAuthForm(portal, initialMessage);
+  const portalLabel = portal === 'staff' ? '관리자' : '환자';
   return (
     <main className="app-shell auth-shell">
       <section className="workspace-page-shell auth-panel">
-        <div>
+        <header className="auth-brand">
           <p className="workspace-page-kicker">LUAD AI</p>
-          <h1>{mode === 'login' ? '로그인' : '계정 생성'}</h1>
-          <p>분석 결과를 안전하게 저장하려면 Supabase 계정으로 로그인해 주세요.</p>
+        </header>
+        <div className="auth-heading">
+          <h1>{portalLabel} {mode === 'login' ? '로그인' : '계정 생성'}</h1>
+          <p>
+            {portal === 'staff'
+              ? '사전에 승인된 의료진 또는 관리자 계정으로 로그인해 주세요.'
+              : '분석 결과를 안전하게 저장하려면 환자 계정으로 로그인해 주세요.'}
+          </p>
         </div>
 
         <form className="auth-form" onSubmit={submit}>
@@ -43,13 +62,18 @@ export function AuthPage() {
           </button>
         </form>
 
-        <button
-          className="secondary-button auth-switch"
-          type="button"
-          onClick={switchMode}
-        >
-          {mode === 'login' ? '새 계정 만들기' : '로그인으로 돌아가기'}
-        </button>
+        {portal === 'patient' ? (
+          <button className="secondary-button auth-switch" type="button" onClick={switchMode}>
+            {mode === 'login' ? '새 계정 만들기' : '로그인으로 돌아가기'}
+          </button>
+        ) : (
+          <p className="auth-helper-text">관리자 계정은 서비스 관리자가 사전에 등록합니다.</p>
+        )}
+        {onBack ? (
+          <button className="auth-back-button" type="button" onClick={onBack}>
+            ← 사용자 유형 다시 선택
+          </button>
+        ) : null}
       </section>
     </main>
   );

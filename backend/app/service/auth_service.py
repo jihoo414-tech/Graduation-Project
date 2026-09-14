@@ -1,5 +1,5 @@
 from app.common.exceptions import AppError, error_detail
-from app.domain.user import DEFAULT_ROLE, ROLE_VALUES, SupabaseUser, UserRole
+from app.domain.user import CLINICAL_ROLES, DEFAULT_ROLE, ROLE_VALUES, SupabaseUser, UserRole
 from app.repository import auth_repository
 
 
@@ -42,3 +42,13 @@ def verify_supabase_user(access_token: str) -> SupabaseUser:
 def resolve_user_role(access_token: str, user_id: str) -> UserRole:
     role = auth_repository.fetch_profile_role(access_token, user_id)
     return role if role in ROLE_VALUES else DEFAULT_ROLE
+
+
+def require_clinical_role(user: SupabaseUser) -> None:
+    if user.role not in CLINICAL_ROLES:
+        raise AppError(
+            status_code=403,
+            code="CLINICAL_ROLE_REQUIRED",
+            message="분석 실행 권한이 없습니다. 의사 또는 관리자 계정으로 로그인해 주세요.",
+            details=[error_detail("role", "doctor_or_admin")],
+        )

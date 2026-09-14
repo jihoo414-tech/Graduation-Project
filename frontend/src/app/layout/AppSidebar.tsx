@@ -1,6 +1,8 @@
 type AppSidebarProps = {
   active: 'dashboard' | 'analysis';
   userEmail?: string;
+  roleLabel?: string;
+  showAnalysis?: boolean;
   onStartAnalysis: () => void;
   onDashboard: () => void;
   onSignOut: () => void;
@@ -9,6 +11,8 @@ type AppSidebarProps = {
 export function AppSidebar({
   active,
   userEmail,
+  roleLabel,
+  showAnalysis = true,
   onStartAnalysis,
   onDashboard,
   onSignOut,
@@ -29,7 +33,6 @@ export function AppSidebar({
         </div>
         <div>
           <p className="marketing-kicker">LUAD AI</p>
-          <h2>Clinical Workspace</h2>
         </div>
       </button>
 
@@ -41,16 +44,19 @@ export function AppSidebar({
         >
           대시보드
         </button>
-        <button
-          className={`app-sidebar-link ${active === 'analysis' ? 'is-active' : ''}`}
-          type="button"
-          onClick={onStartAnalysis}
-        >
-          분석
-        </button>
+        {showAnalysis ? (
+          <button
+            className={`app-sidebar-link ${active === 'analysis' ? 'is-active' : ''}`}
+            type="button"
+            onClick={onStartAnalysis}
+          >
+            새 분석
+          </button>
+        ) : null}
       </nav>
 
       <footer className="app-sidebar-footer">
+        {roleLabel ? <span className="sidebar-role-label">{roleLabel}</span> : null}
         {userEmail && <p className="muted-text sidebar-email">{userEmail}</p>}
         <button className="secondary-button" type="button" onClick={onSignOut}>
           로그아웃

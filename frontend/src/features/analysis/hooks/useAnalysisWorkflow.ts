@@ -9,10 +9,11 @@ type ResultBackTarget = 'analysis' | 'dashboard';
 type AppErrorMessage = ReturnType<typeof normalizeUnknownError>;
 
 export function useAnalysisWorkflow(accessToken: string | undefined) {
-  const [phase, setPhase] = useState<Phase>('input');
+  const [phase, setPhase] = useState<Phase>('dashboard');
   const [mutationFile, setMutationFile] = useState<File | null>(null);
   const [expressionFile, setExpressionFile] = useState<File | null>(null);
-  const [inputStep, setInputStep] = useState<1 | 2>(1);
+  const [inputStep, setInputStep] = useState<1 | 2 | 3>(1);
+  const [selectedPatientId, setSelectedPatientId] = useState('');
   const [clinicalDraft, setClinicalDraft] = useState<ClinicalDraft>(emptyClinicalDraft);
   const [result, setResult] = useState<ResultEnvelope | null>(null);
   const [resultBackTarget, setResultBackTarget] = useState<ResultBackTarget>('analysis');
@@ -23,6 +24,7 @@ export function useAnalysisWorkflow(accessToken: string | undefined) {
     setMutationFile(null);
     setExpressionFile(null);
     setInputStep(1);
+    setSelectedPatientId('');
     setClinicalDraft(emptyClinicalDraft);
     setResult(null);
     setResultBackTarget('analysis');
@@ -45,6 +47,20 @@ export function useAnalysisWorkflow(accessToken: string | undefined) {
     setClinicalDraft((draft) => ({ ...draft, ...patch }));
   };
 
+  const startAnalysis = (patientId = '') => {
+    resetAnalysis();
+    setSelectedPatientId(patientId);
+  };
+
+  const continueToClinical = () => {
+    if (!selectedPatientId) {
+      setError({ message: '분석 결과를 등록할 환자를 선택해 주세요.' });
+      return;
+    }
+    setError(null);
+    setInputStep(2);
+  };
+
   const continueToFiles = () => {
     if (!isValidClinicalDraft(clinicalDraft)) {
       setError({ message: '입력값을 다시 확인해 주세요.' });
@@ -52,7 +68,7 @@ export function useAnalysisWorkflow(accessToken: string | undefined) {
     }
 
     setError(null);
-    setInputStep(2);
+    setInputStep(3);
   };
 
   const submit = async (event: FormEvent<HTMLFormElement>) => {
@@ -65,6 +81,11 @@ export function useAnalysisWorkflow(accessToken: string | undefined) {
       setError({ message: '돌연변이 CSV와 RNA-seq CSV를 모두 선택해 주세요.' });
       return;
     }
+    if (!selectedPatientId) {
+      setError({ message: '분석 결과를 등록할 환자를 선택해 주세요.' });
+      setInputStep(1);
+      return;
+    }
 
     try {
       setError(null);
@@ -73,6 +94,7 @@ export function useAnalysisWorkflow(accessToken: string | undefined) {
         mutationFile,
         expressionFile,
         {
+          patientId: selectedPatientId,
           birthDate: toBirthDate(clinicalDraft),
           gender: clinicalDraft.gender,
           stage: clinicalDraft.stage,
@@ -90,14 +112,17 @@ export function useAnalysisWorkflow(accessToken: string | undefined) {
 
 
   return {
-    phase, result, resultBackTarget, resetAnalysis, showDashboard, openSavedResult,
+    phase, result, resultBackTarget, resetAnalysis, startAnalysis, showDashboard, openSavedResult,
     inputProps: {
-      mutationFile, expressionFile, inputStep, clinicalDraft, error,
+      accessToken: accessToken ?? '',
+      mutationFile, expressionFile, inputStep, clinicalDraft, error, selectedPatientId,
+      onPatientSelect: setSelectedPatientId,
+      onPatientContinue: continueToClinical,
       onMutationFileChange: setMutationFile,
       onExpressionFileChange: setExpressionFile,
       onClinicalChange: updateClinicalDraft,
       onContinue: continueToFiles,
-      onBack: () => setInputStep(1),
+      onBack: () => setInputStep((step) => (step === 3 ? 2 : 1)),
       onSubmit: submit,
       onDismissError: () => setError(null),
     },

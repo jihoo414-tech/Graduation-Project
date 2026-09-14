@@ -3,14 +3,19 @@ import { ErrorAlert } from '../../../shared/ui/ErrorAlert';
 import type { BackendError } from '../../../shared/api/errors';
 import { ClinicalStep } from '../components/ClinicalStep';
 import { FileUploadStep } from '../components/FileUploadStep';
+import { PatientSelectionStep } from '../components/PatientSelectionStep';
 import type { ClinicalDraft } from '../model/clinicalInput';
 
 type AnalysisInputPageProps = {
+  accessToken: string;
   mutationFile: File | null;
   expressionFile: File | null;
-  inputStep: 1 | 2;
+  inputStep: 1 | 2 | 3;
+  selectedPatientId: string;
   clinicalDraft: ClinicalDraft;
   error: BackendError | null;
+  onPatientSelect: (patientId: string) => void;
+  onPatientContinue: () => void;
   onMutationFileChange: (file: File | null) => void;
   onExpressionFileChange: (file: File | null) => void;
   onClinicalChange: (patch: Partial<ClinicalDraft>) => void;
@@ -22,7 +27,8 @@ type AnalysisInputPageProps = {
 };
 
 export function AnalysisInputPage({
-  mutationFile, expressionFile, inputStep, clinicalDraft, error,
+  accessToken, mutationFile, expressionFile, inputStep, clinicalDraft, error, selectedPatientId,
+  onPatientSelect, onPatientContinue,
   onMutationFileChange, onExpressionFileChange, onClinicalChange,
   onContinue, onBack, onSubmit, onDismissError, onDashboard,
 }: AnalysisInputPageProps) {
@@ -37,8 +43,31 @@ export function AnalysisInputPage({
           </div>
         </header>
 
+        <ol className="analysis-progress-steps" aria-label="분석 입력 단계">
+          <li className={inputStep === 1 ? 'is-active' : 'is-complete'}>
+            <span>1</span>
+            <strong>환자 선택</strong>
+          </li>
+          <li className={inputStep === 2 ? 'is-active' : inputStep === 3 ? 'is-complete' : ''}>
+            <span>2</span>
+            <strong>임상 정보</strong>
+          </li>
+          <li className={inputStep === 3 ? 'is-active' : ''}>
+            <span>3</span>
+            <strong>파일 업로드</strong>
+          </li>
+        </ol>
+
         <form className="upload-form" onSubmit={onSubmit}>
           {inputStep === 1 ? (
+            <PatientSelectionStep
+              accessToken={accessToken}
+              selectedPatientId={selectedPatientId}
+              onSelect={onPatientSelect}
+              onContinue={onPatientContinue}
+              onDashboard={onDashboard}
+            />
+          ) : inputStep === 2 ? (
             <ClinicalStep
               draft={clinicalDraft}
               onChange={onClinicalChange}

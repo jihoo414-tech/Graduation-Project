@@ -1,15 +1,20 @@
-import { useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
+import type { AuthPortal } from '../../../shared/types/auth';
 import { supabase } from '../api/supabase';
 import { authErrorMessage } from '../api/authErrors';
 
 type Mode = 'login' | 'signup';
 
-export function useAuthForm() {
+export function useAuthForm(portal: AuthPortal = 'patient', initialMessage = '') {
   const [mode, setMode] = useState<Mode>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [message, setMessage] = useState('');
   const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    setMessage(initialMessage);
+  }, [initialMessage]);
 
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -20,7 +25,7 @@ export function useAuthForm() {
 
     try {
       const response =
-        mode === 'login'
+        mode === 'login' || portal === 'staff'
           ? await supabase.auth.signInWithPassword({ email, password })
           : await supabase.auth.signUp({ email, password });
 
@@ -44,9 +49,20 @@ export function useAuthForm() {
 
 
   const switchMode = () => {
+    if (portal === 'staff') return;
     setMode(mode === 'login' ? 'signup' : 'login');
     setMessage('');
   };
 
-  return { mode, email, setEmail, password, setPassword, message, submitting, submit, switchMode };
+  return {
+    mode: portal === 'staff' ? 'login' : mode,
+    email,
+    setEmail,
+    password,
+    setPassword,
+    message,
+    submitting,
+    submit,
+    switchMode,
+  };
 }

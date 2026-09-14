@@ -17,7 +17,8 @@ from app.service import inference_service
 @pytest.mark.parametrize("save_fails", [False, True])
 def test_upload_runs_model_then_saves_result(monkeypatch, save_fails):
     calls = []
-    user = SupabaseUser(id="user-1", role="patient")
+    user = SupabaseUser(id="doctor-1", role="doctor")
+    patient_user_id = "11111111-1111-1111-1111-111111111111"
     patient = NormalizedPatientInput(
         deidentified_patient_id="P-001",
         gene_variants=[],
@@ -33,6 +34,8 @@ def test_upload_runs_model_then_saves_result(monkeypatch, save_fails):
             "artifacts": {"risk_group": "Low", "ensemble_score": 0.1},
         },
     )
+    expected_result = result.model_dump(mode="json")
+    expected_result["patient"]["deidentified_patient_id"] = patient_user_id
 
     def build(**kwargs):
         assert kwargs["mutation_bytes"] == b"mutation-data"
@@ -52,10 +55,12 @@ def test_upload_runs_model_then_saves_result(monkeypatch, save_fails):
         assert path == "/rest/v1/analysis_results"
         assert method == "POST"
         assert access_token == "test-token"
-        assert body["user_id"] == user.id
-        assert body["patient_id"] == "P-001"
+        assert body["user_id"] == patient_user_id
+        assert body["patient_id"] == patient_user_id
+        assert body["patient_user_id"] == patient_user_id
+        assert body["created_by"] == user.id
         assert body["risk_score"] == 0.1
-        assert body["result_payload"] == result.model_dump(mode="json")
+        assert body["result_payload"] == expected_result
         assert prefer == "return=minimal"
         calls.append("save")
         if save_fails:
@@ -63,6 +68,7 @@ def test_upload_runs_model_then_saves_result(monkeypatch, save_fails):
         return 201, b""
 
     monkeypatch.setattr(analysis_controller, "verify_supabase_user", lambda _: user)
+    monkeypatch.setattr(analysis_controller, "require_patient", lambda *_: None)
     monkeypatch.setattr(inference_service, "artifact_paths_from_env", lambda: None)
     monkeypatch.setattr(inference_service, "build_model_patient", build)
     monkeypatch.setattr(
@@ -73,7 +79,12 @@ def test_upload_runs_model_then_saves_result(monkeypatch, save_fails):
     response = TestClient(app).post(
         "/api/v1/inference/upload",
         headers={"Authorization": "Bearer test-token"},
-        data={"birth_date": "1990-01-01", "gender": "female", "stage": "1"},
+        data={
+            "patient_id": patient_user_id,
+            "birth_date": "1990-01-01",
+            "gender": "female",
+            "stage": "1",
+        },
         files={
             "mutation_file": ("mutation.csv", b"mutation-data", "text/csv"),
             "expression_file": ("expression.csv", b"expression-data", "text/csv"),
@@ -90,4 +101,4 @@ def test_upload_runs_model_then_saves_result(monkeypatch, save_fails):
         }
     else:
         assert response.status_code == 200
-        assert response.json() == result.model_dump(mode="json")
+        assert response.json() == expected_result

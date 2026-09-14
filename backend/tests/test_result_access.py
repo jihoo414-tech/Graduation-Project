@@ -35,6 +35,7 @@ def test_result_access_by_trusted_profile(monkeypatch, role):
                     "id": str(index),
                     "created_at": "2026-09-13T00:00:00Z",
                     "patient_id": "P-001",
+                    "patient_user_id": "patient-1",
                     "variant_count": 1,
                     "result_payload": payload,
                 }
@@ -54,14 +55,14 @@ def test_result_access_by_trusted_profile(monkeypatch, role):
     assert [query["offset"] for query in queries] == [["0"], ["100"], ["101"]]
     item = body["items"][0]
     if role == "patient":
-        assert all(query["user_id"] == ["eq.user-1"] for query in queries)
+        assert all(query["patient_user_id"] == ["eq.user-1"] for query in queries)
         assert item["patientId"] is None
         assert item["variantCount"] is None
         assert "model_scores" not in item["resultPayload"]["result"]["artifacts"]
         assert "gene_variants" not in item["resultPayload"]["normalized_input"]
     else:
-        assert all("user_id" not in query for query in queries)
-        assert item["patientId"] == "P-001"
+        assert all("patient_user_id" not in query for query in queries)
+        assert item["patientId"] == "patient-1"
         assert item["variantCount"] == 1
         assert item["resultPayload"] == payload
 

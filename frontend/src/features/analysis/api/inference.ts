@@ -11,6 +11,7 @@ export const uploadModelFiles = async (
   const formData = new FormData();
   formData.append('mutation_file', mutationFile);
   formData.append('expression_file', expressionFile);
+  formData.append('patient_id', clinical.patientId);
   formData.append('birth_date', clinical.birthDate);
   formData.append('gender', clinical.gender);
   formData.append('stage', clinical.stage);

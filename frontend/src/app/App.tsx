@@ -1,7 +1,9 @@
+import { useState } from 'react';
 import { AuthenticatedLayout } from './layout/AuthenticatedLayout';
 import { AuthPage } from '../features/auth/pages/AuthPage';
 import { AuthLoadingPage } from '../features/auth/components/AuthLoadingPage';
 import { AuthSetupPage } from '../features/auth/components/AuthSetupPage';
+import { RoleSelectionPage } from '../features/auth/pages/RoleSelectionPage';
 import { useAuthSession } from '../features/auth/hooks/useAuthSession';
 import { isSupabaseConfigured } from '../features/auth/api/supabase';
 import { useAnalysisWorkflow } from '../features/analysis/hooks/useAnalysisWorkflow';
@@ -9,48 +11,113 @@ import { AnalysisInputPage } from '../features/analysis/pages/AnalysisInputPage'
 import { AnalysisListPage } from '../features/analysis/pages/AnalysisListPage';
 import { AnalyzingPage } from '../features/analysis/pages/AnalyzingPage';
 import { ResultPage } from '../features/analysis/pages/ResultPage';
+import { StaffDashboardPage } from '../features/analysis/pages/StaffDashboardPage';
+import type { AuthPortal } from '../shared/types/auth';
+import { isStaffRole } from '../shared/types/auth';
 
 export default function App() {
-  const { session, authLoading, signOut } = useAuthSession();
+  const [selectedPortal, setSelectedPortal] = useState<AuthPortal | null>(null);
+  const { session, currentUser, authLoading, authError, signOut, clearAuthError } =
+    useAuthSession(selectedPortal);
   const workflow = useAnalysisWorkflow(session?.access_token);
-  const { phase, result, resultBackTarget, resetAnalysis, showDashboard, openSavedResult } = workflow;
+  const {
+    phase,
+    result,
+    resultBackTarget,
+    resetAnalysis,
+    startAnalysis,
+    showDashboard,
+    openSavedResult,
+  } = workflow;
 
   const handleSignOut = async () => {
     await signOut();
     resetAnalysis();
+    setSelectedPortal(null);
+  };
+
+  const selectPortal = (portal: AuthPortal) => {
+    clearAuthError();
+    setSelectedPortal(portal);
+  };
+
+  const resetPortal = () => {
+    clearAuthError();
+    setSelectedPortal(null);
   };
 
   if (!isSupabaseConfigured) return <AuthSetupPage />;
   if (authLoading) return <AuthLoadingPage />;
-  if (!session) return <AuthPage />;
+  if (!session || !currentUser) {
+    if (!selectedPortal) return <RoleSelectionPage onSelect={selectPortal} />;
+    return (
+      <AuthPage
+        portal={selectedPortal}
+        initialMessage={authError}
+        onBack={resetPortal}
+      />
+    );
+  }
   if (phase === 'analyzing') return <AnalyzingPage />;
 
   const showingResult = phase === 'result' && result !== null;
+  const staffWorkspace = isStaffRole(currentUser.role);
   const active = phase === 'dashboard' || (showingResult && resultBackTarget === 'dashboard')
     ? 'dashboard' : 'analysis';
 
+  if (staffWorkspace) {
+    return (
+      <AuthenticatedLayout
+        active={active}
+        userEmail={currentUser.email ?? session.user.email}
+        roleLabel={currentUser.role === 'admin' ? '관리자' : '의사'}
+        showAnalysis
+        onDashboard={showDashboard}
+        onStartAnalysis={() => startAnalysis()}
+        onSignOut={handleSignOut}
+      >
+        {showingResult ? (
+          <ResultPage
+            result={result}
+            onBackToCases={showDashboard}
+            backButtonLabel="대시보드로"
+          />
+        ) : phase === 'input' ? (
+          <AnalysisInputPage {...workflow.inputProps} onDashboard={showDashboard} />
+        ) : (
+          <StaffDashboardPage
+            accessToken={session.access_token}
+            onOpenResult={openSavedResult}
+            onStartAnalysis={startAnalysis}
+          />
+        )}
+      </AuthenticatedLayout>
+    );
+  }
+
   return (
     <AuthenticatedLayout
-      active={active}
+      active="dashboard"
       userEmail={session.user.email}
+      roleLabel="환자"
       onDashboard={showDashboard}
-      onStartAnalysis={resetAnalysis}
+      showAnalysis={false}
+      onStartAnalysis={showDashboard}
       onSignOut={handleSignOut}
     >
       {showingResult ? (
         <ResultPage
           result={result}
-          onBackToCases={resultBackTarget === 'dashboard' ? showDashboard : resetAnalysis}
-          backButtonLabel={resultBackTarget === 'dashboard' ? '대시보드로' : '새 분석'}
+          onBackToCases={showDashboard}
+          backButtonLabel="대시보드로"
         />
-      ) : phase === 'dashboard' ? (
+      ) : (
         <AnalysisListPage
           accessToken={session.access_token}
           onOpenResult={openSavedResult}
-          onStartAnalysis={resetAnalysis}
+          onStartAnalysis={showDashboard}
+          canStartAnalysis={false}
         />
-      ) : (
-        <AnalysisInputPage {...workflow.inputProps} onDashboard={showDashboard} />
       )}
     </AuthenticatedLayout>
   );
