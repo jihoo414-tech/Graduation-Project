@@ -28,3 +28,21 @@ export async function requestJson<T>(
   }
   return body as T;
 }
+
+export async function requestNoContent(
+  path: string,
+  options: RequestInit,
+  fallbackMessage: string,
+): Promise<void> {
+  let response: Response;
+  try {
+    response = await fetch(`${API_BASE_URL}${path}`, options);
+  } catch {
+    throw new ApiError(0, '서버에 연결하지 못했습니다. 인터넷 연결을 확인하고 잠시 후 다시 시도해 주세요.');
+  }
+  if (!response.ok) {
+    const body = await response.json().catch(() => null);
+    const localized = isBackendError(body) && /[가-힣]/.test(body.message);
+    throw new ApiError(response.status, localized ? body.message : fallbackMessage);
+  }
+}

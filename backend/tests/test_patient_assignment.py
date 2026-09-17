@@ -2,12 +2,13 @@ import pytest
 from fastapi.testclient import TestClient
 
 from app.common.exceptions import AppError
-from app.controller import analysis_controller
-from app.domain.user import SupabaseUser
+from app.domains.analysis import controller as analysis_controller
+from app.domains.analysis import repository as analysis_repository
+from app.domains.auth.models import SupabaseUser
+from app.domains.auth.service import require_clinical_role
+from app.domains.patients import repository as patient_repository
+from app.domains.patients.service import fetch_patients, soft_delete_patient
 from app.main import app
-from app.repository import analysis_repository, patient_repository
-from app.service.auth_service import require_clinical_role
-from app.service.patient_service import fetch_patients
 
 
 def test_patient_cannot_run_analysis(monkeypatch):
@@ -41,8 +42,8 @@ def test_patient_list_aggregates_results_by_database_user_id(monkeypatch):
         patient_repository,
         "fetch_patients",
         lambda _: [
-            {"id": "patient-1", "created_at": "2026-09-01T00:00:00Z"},
-            {"id": "patient-2", "created_at": "2026-09-02T00:00:00Z"},
+            {"id": "patient-1", "full_name": "환자 일", "created_at": "2026-09-01T00:00:00Z"},
+            {"id": "patient-2", "full_name": None, "created_at": "2026-09-02T00:00:00Z"},
         ],
     )
     monkeypatch.setattr(
@@ -67,6 +68,7 @@ def test_patient_list_aggregates_results_by_database_user_id(monkeypatch):
         "items": [
             {
                 "id": "patient-1",
+                "fullName": "환자 일",
                 "createdAt": "2026-09-01T00:00:00Z",
                 "lastAnalysisAt": "2026-09-14T00:00:00Z",
                 "latestRiskGroup": "High",
@@ -74,6 +76,7 @@ def test_patient_list_aggregates_results_by_database_user_id(monkeypatch):
             },
             {
                 "id": "patient-2",
+                "fullName": None,
                 "createdAt": "2026-09-02T00:00:00Z",
                 "lastAnalysisAt": None,
                 "latestRiskGroup": None,
@@ -94,3 +97,18 @@ def test_only_clinical_roles_can_run_analysis():
     require_clinical_role(SupabaseUser(id="admin-1", role="admin"))
     with pytest.raises(AppError):
         require_clinical_role(SupabaseUser(id="patient-1", role="patient"))
+
+
+def test_clinical_staff_can_soft_delete_patient(monkeypatch):
+    calls = []
+    monkeypatch.setattr(
+        patient_repository,
+        "soft_delete_patient",
+        lambda token, patient_id: calls.append((token, patient_id)) or True,
+    )
+    soft_delete_patient("token", SupabaseUser(id="doctor-1", role="doctor"), "patient-1")
+    assert calls == [("token", "patient-1")]
+
+    with pytest.raises(AppError) as error:
+        soft_delete_patient("token", SupabaseUser(id="patient-1", role="patient"), "patient-2")
+    assert error.value.status_code == 403

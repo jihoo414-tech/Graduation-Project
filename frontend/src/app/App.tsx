@@ -70,6 +70,7 @@ export default function App() {
       <AuthenticatedLayout
         active={active}
         userEmail={currentUser.email ?? session.user.email}
+        userName={currentUser.fullName}
         roleLabel={currentUser.role === 'admin' ? '관리자' : '의사'}
         showAnalysis
         onDashboard={showDashboard}
@@ -87,6 +88,8 @@ export default function App() {
         ) : (
           <StaffDashboardPage
             accessToken={session.access_token}
+            currentUserId={currentUser.id}
+            viewerRole={currentUser.role as 'doctor' | 'admin'}
             onOpenResult={openSavedResult}
             onStartAnalysis={startAnalysis}
           />
@@ -99,6 +102,7 @@ export default function App() {
     <AuthenticatedLayout
       active="dashboard"
       userEmail={session.user.email}
+      userName={currentUser.fullName}
       roleLabel="환자"
       onDashboard={showDashboard}
       showAnalysis={false}

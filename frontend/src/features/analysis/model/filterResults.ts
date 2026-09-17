@@ -9,7 +9,7 @@ export function filterAnalysisResults(
 
   return items.filter((item) =>
     [
-      item.patientId,
+      item.patientName,
       item.riskGroup,
       item.stage ? `stage ${item.stage}` : null,
       item.gender,

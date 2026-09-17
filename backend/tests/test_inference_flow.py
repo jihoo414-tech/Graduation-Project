@@ -5,13 +5,13 @@ from urllib.error import HTTPError
 import pytest
 from fastapi.testclient import TestClient
 
-from app.controller import analysis_controller
-from app.domain.user import SupabaseUser
-from app.dto.response.inference import InferenceSuccessResponse
-from app.dto.shared.patient import NormalizedPatientInput
+from app.domains.analysis import controller as analysis_controller
+from app.domains.analysis import inference_service
+from app.domains.analysis.schemas.inference_response import InferenceSuccessResponse
+from app.domains.analysis.schemas.patient import NormalizedPatientInput
+from app.domains.auth.models import SupabaseUser
 from app.infrastructure import supabase_client
 from app.main import app
-from app.service import inference_service
 
 
 @pytest.mark.parametrize("save_fails", [False, True])
@@ -36,6 +36,9 @@ def test_upload_runs_model_then_saves_result(monkeypatch, save_fails):
     )
     expected_result = result.model_dump(mode="json")
     expected_result["patient"]["deidentified_patient_id"] = patient_user_id
+    expected_stored_result = result.model_dump(mode="json")
+    expected_stored_result["patient"]["deidentified_patient_id"] = patient_user_id
+    expected_stored_result["patient"].pop("display_name", None)
 
     def build(**kwargs):
         assert kwargs["mutation_bytes"] == b"mutation-data"
@@ -60,7 +63,7 @@ def test_upload_runs_model_then_saves_result(monkeypatch, save_fails):
         assert body["patient_user_id"] == patient_user_id
         assert body["created_by"] == user.id
         assert body["risk_score"] == 0.1
-        assert body["result_payload"] == expected_result
+        assert body["result_payload"] == expected_stored_result
         assert prefer == "return=minimal"
         calls.append("save")
         if save_fails:

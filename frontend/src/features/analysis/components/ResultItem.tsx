@@ -18,32 +18,40 @@ const formatScore = (value: number | null) => (typeof value === 'number' ? value
 type ResultItemProps = {
   item: AnalysisResultListItem;
   onOpenResult: (result: ResultEnvelope) => void;
+  onDelete?: (resultId: string) => void;
 };
 
-export function ResultItem({ item, onOpenResult }: ResultItemProps) {
-  const patientLabel = item.patientId ?? '내 분석 결과';
+export function ResultItem({ item, onOpenResult, onDelete }: ResultItemProps) {
+  const patientLabel = item.patientName ?? (item.patientId ? '이름 미등록' : '내 분석 결과');
 
   return (
-    <button
-      className="case-list-item case-list-item-button"
-      type="button"
-      onClick={() => item.resultPayload && onOpenResult(item.resultPayload)}
-      disabled={!item.resultPayload}
-    >
-      <div>
-        <p className="workspace-page-kicker">{formatDate(item.createdAt)}</p>
-        <strong>{patientLabel}</strong>
-        <p>
-          {formatGender(item.gender)} · {item.age ? `${item.age}세` : '나이 미입력'} ·{' '}
-          {item.stage ? `Stage ${item.stage}` : '병기 미입력'} · 점수 {formatScore(item.riskScore)}
-        </p>
-      </div>
+    <article className="case-list-item">
+      <button
+        className="case-list-open"
+        type="button"
+        onClick={() => item.resultPayload && onOpenResult(item.resultPayload)}
+        disabled={!item.resultPayload}
+      >
+        <div>
+          <p className="workspace-page-kicker">{formatDate(item.createdAt)}</p>
+          <strong>{patientLabel}</strong>
+          <p>
+            {formatGender(item.gender)} · {item.age ? `${item.age}세` : '나이 미입력'} ·{' '}
+            {item.stage ? `Stage ${item.stage}` : '병기 미입력'} · 점수 {formatScore(item.riskScore)}
+          </p>
+        </div>
+      </button>
       <div className="case-list-meta">
         <span className={`status-badge status-${item.riskGroup?.toLowerCase() ?? 'unknown'}`}>
           {formatRiskGroup(item.riskGroup)}
         </span>
         <span className="case-list-action-label">결과 보기</span>
+        {onDelete ? (
+          <button className="danger-text-button" type="button" onClick={() => onDelete(item.id)}>
+            삭제
+          </button>
+        ) : null}
       </div>
-    </button>
+    </article>
   );
 }

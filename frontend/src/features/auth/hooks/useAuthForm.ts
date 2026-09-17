@@ -8,6 +8,7 @@ type Mode = 'login' | 'signup';
 export function useAuthForm(portal: AuthPortal = 'patient', initialMessage = '') {
   const [mode, setMode] = useState<Mode>('login');
   const [email, setEmail] = useState('');
+  const [fullName, setFullName] = useState('');
   const [password, setPassword] = useState('');
   const [message, setMessage] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -27,7 +28,11 @@ export function useAuthForm(portal: AuthPortal = 'patient', initialMessage = '')
       const response =
         mode === 'login' || portal === 'staff'
           ? await supabase.auth.signInWithPassword({ email, password })
-          : await supabase.auth.signUp({ email, password });
+          : await supabase.auth.signUp({
+              email,
+              password,
+              options: { data: { full_name: fullName.trim() } },
+            });
 
       if (response.error) {
         setMessage(authErrorMessage(response.error, mode));
@@ -58,6 +63,8 @@ export function useAuthForm(portal: AuthPortal = 'patient', initialMessage = '')
     mode: portal === 'staff' ? 'login' : mode,
     email,
     setEmail,
+    fullName,
+    setFullName,
     password,
     setPassword,
     message,

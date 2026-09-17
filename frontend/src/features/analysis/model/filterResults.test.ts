@@ -6,6 +6,7 @@ const item = (overrides: Partial<AnalysisResultListItem>): AnalysisResultListIte
   id: 'row-1',
   createdAt: '2026-06-30T00:00:00Z',
   patientId: 'P-001',
+  patientName: '테스트 환자',
   riskGroup: 'High',
   riskScore: 1.23,
   age: 67,
@@ -19,11 +20,11 @@ const item = (overrides: Partial<AnalysisResultListItem>): AnalysisResultListIte
 describe('filterAnalysisResults', () => {
   it('filters saved results by patient id, risk group, stage, gender, or age', () => {
     const items = [
-      item({ id: 'row-1', patientId: 'P-001', riskGroup: 'High', stage: '3', gender: 'female', age: 67 }),
-      item({ id: 'row-2', patientId: 'P-002', riskGroup: 'Low', stage: '1', gender: 'male', age: 51 }),
+      item({ id: 'row-1', patientId: 'P-001', patientName: '김환자', riskGroup: 'High', stage: '3', gender: 'female', age: 67 }),
+      item({ id: 'row-2', patientId: 'P-002', patientName: '이환자', riskGroup: 'Low', stage: '1', gender: 'male', age: 51 }),
     ];
 
-    expect(filterAnalysisResults(items, 'p-002')).toEqual([items[1]]);
+    expect(filterAnalysisResults(items, '이환자')).toEqual([items[1]]);
     expect(filterAnalysisResults(items, 'low')).toEqual([items[1]]);
     expect(filterAnalysisResults(items, 'stage 3')).toEqual([items[0]]);
     expect(filterAnalysisResults(items, '67세')).toEqual([items[0]]);

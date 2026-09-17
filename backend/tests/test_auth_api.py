@@ -31,6 +31,7 @@ def test_current_user_returns_server_verified_role(monkeypatch):
     assert response.json() == {
         "id": "user-1",
         "email": "doctor@example.com",
+        "fullName": None,
         "role": "doctor",
     }
 

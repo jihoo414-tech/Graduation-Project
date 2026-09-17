@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from app.dto.internal.errors import ErrorBody, ErrorDetail, ErrorResponse
+from app.common.error_models import ErrorBody, ErrorDetail, ErrorResponse
 
 
 @dataclass(slots=True)

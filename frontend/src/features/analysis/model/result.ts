@@ -20,6 +20,7 @@ export type ResultEnvelope = {
   result_version: 'v1' | 'v2';
   patient: {
     deidentified_patient_id?: string;
+    display_name?: string;
   };
   normalized_input: NormalizedPatientInput;
   result: {

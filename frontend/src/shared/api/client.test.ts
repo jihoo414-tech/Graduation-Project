@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { requestJson } from './client';
+import { requestJson, requestNoContent } from './client';
 
 afterEach(() => vi.unstubAllGlobals());
 
@@ -42,5 +42,20 @@ describe('requestJson', () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('not-json')));
     await expect(requestJson('/test', {}, 'fallback'))
       .rejects.toThrow('서버 응답을 읽을 수 없습니다. 화면을 새로고침한 뒤 다시 시도해 주세요.');
+  });
+});
+
+describe('requestNoContent', () => {
+  it('accepts a successful empty response', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(null, { status: 204 })));
+    await expect(requestNoContent('/test', { method: 'DELETE' }, 'fallback')).resolves.toBeUndefined();
+  });
+
+  it('uses a localized delete error message', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(
+      JSON.stringify({ message: '삭제할 결과를 찾을 수 없습니다.' }), { status: 404 },
+    )));
+    await expect(requestNoContent('/test', { method: 'DELETE' }, 'fallback'))
+      .rejects.toThrow('삭제할 결과를 찾을 수 없습니다.');
   });
 });

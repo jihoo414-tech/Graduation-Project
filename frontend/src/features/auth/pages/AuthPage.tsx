@@ -12,8 +12,19 @@ export function AuthPage({
   initialMessage = '',
   onBack,
 }: AuthPageProps) {
-  const { mode, email, setEmail, password, setPassword, message, submitting, submit, switchMode } =
-    useAuthForm(portal, initialMessage);
+  const {
+    mode,
+    email,
+    setEmail,
+    fullName,
+    setFullName,
+    password,
+    setPassword,
+    message,
+    submitting,
+    submit,
+    switchMode,
+  } = useAuthForm(portal, initialMessage);
   const portalLabel = portal === 'staff' ? '관리자' : '환자';
   return (
     <main className="app-shell auth-shell">
@@ -31,6 +42,21 @@ export function AuthPage({
         </div>
 
         <form className="auth-form" onSubmit={submit}>
+          {mode === 'signup' ? (
+            <label>
+              <span>이름</span>
+              <input
+                aria-label="이름"
+                type="text"
+                autoComplete="name"
+                value={fullName}
+                onChange={(event) => setFullName(event.target.value)}
+                minLength={2}
+                maxLength={50}
+                required
+              />
+            </label>
+          ) : null}
           <label>
             <span>이메일</span>
             <input

@@ -1,13 +1,18 @@
 import { ResultItem } from '../components/ResultItem';
 import { SummaryTile } from '../components/SummaryTile';
 import { useAnalysisResults } from '../hooks/useAnalysisResults';
-import { usePatients } from '../hooks/usePatients';
+import { usePatients } from '../../patients/hooks/usePatients';
 import type { ResultEnvelope } from '../model/result';
+import { Pagination } from '../../../shared/ui/Pagination';
+import type { UserRole } from '../../../shared/types/auth';
+import { UserManagementPanel } from '../../admin/components/UserManagementPanel';
 
 type StaffDashboardPageProps = {
   accessToken: string;
   onOpenResult: (result: ResultEnvelope) => void;
   onStartAnalysis: (patientId?: string) => void;
+  currentUserId: string;
+  viewerRole: Extract<UserRole, 'doctor' | 'admin'>;
 };
 
 const formatDate = (value: string | null) =>
@@ -17,9 +22,23 @@ export function StaffDashboardPage({
   accessToken,
   onOpenResult,
   onStartAnalysis,
+  currentUserId,
+  viewerRole,
 }: StaffDashboardPageProps) {
   const patients = usePatients(accessToken);
   const results = useAnalysisResults(accessToken);
+  const confirmResultDelete = (resultId: string) => {
+    if (window.confirm('이 분석 결과를 삭제하시겠습니까? 환자 화면에서도 더 이상 표시되지 않습니다.')) {
+      void results.removeResult(resultId);
+    }
+  };
+  const confirmPatientDelete = (patientId: string, patientName: string | null) => {
+    if (window.confirm(
+      `${patientName ?? '이름 미등록'} 환자의 등록을 해제하시겠습니까? 배정된 분석 결과도 목록에서 숨겨집니다.`,
+    )) {
+      void patients.removePatient(patientId);
+    }
+  };
 
   return (
     <main className="product-shell authenticated-content">
@@ -27,7 +46,7 @@ export function StaffDashboardPage({
         <header className="workspace-page-header">
           <div>
             <p className="workspace-page-kicker">Clinical workspace</p>
-            <h1>관리자 대시보드</h1>
+            <h1>{viewerRole === 'admin' ? '관리자 대시보드' : '의사 대시보드'}</h1>
             <p>등록된 환자와 분석 결과를 관리합니다.</p>
           </div>
           <div className="dashboard-panel-actions">
@@ -45,10 +64,11 @@ export function StaffDashboardPage({
           </div>
         </header>
 
-        <section className="dashboard-summary-strip" aria-label="관리자 대시보드 요약">
+        <section className="dashboard-summary-strip staff-summary-strip" aria-label="관리자 대시보드 요약">
           <SummaryTile label="등록 환자" value={patients.items.length} description="환자 계정" />
-          <SummaryTile label="전체 분석" value={results.items.length} description="저장된 결과" />
+          <SummaryTile label="전체 분석" value={results.total} description="저장된 결과" />
           <SummaryTile label="High risk" value={results.highRiskCount} description="고위험 결과" />
+          <SummaryTile label="Low risk" value={results.lowRiskCount} description="저위험 결과" />
         </section>
 
         <section className="dashboard-main-panel">
@@ -60,7 +80,7 @@ export function StaffDashboardPage({
             <input
               className="search-input"
               aria-label="환자 검색"
-              placeholder="환자 ID 검색"
+              placeholder="환자 이름 검색"
               value={patients.query}
               onChange={(event) => patients.setQuery(event.target.value)}
             />
@@ -82,7 +102,7 @@ export function StaffDashboardPage({
                 return (
                   <article className="staff-patient-row" key={patient.id}>
                     <div>
-                      <code title={patient.id}>{patient.id}</code>
+                      <strong>{patient.fullName ?? '이름 미등록'}</strong>
                       <p>최근 분석 {formatDate(patient.lastAnalysisAt)} · 결과 {patient.resultCount}건</p>
                     </div>
                     <span className={`status-badge status-${patient.latestRiskGroup?.toLowerCase() ?? 'unknown'}`}>
@@ -99,6 +119,13 @@ export function StaffDashboardPage({
                       </button>
                       <button className="primary-button" type="button" onClick={() => onStartAnalysis(patient.id)}>
                         분석 시작
+                      </button>
+                      <button
+                        className="danger-text-button"
+                        type="button"
+                        onClick={() => confirmPatientDelete(patient.id, patient.fullName)}
+                      >
+                        등록 해제
                       </button>
                     </div>
                   </article>
@@ -122,12 +149,28 @@ export function StaffDashboardPage({
           ) : null}
           {!results.loading && !results.error && results.items.length > 0 ? (
             <div className="case-list">
-              {results.items.slice(0, 10).map((item) => (
-                <ResultItem key={item.id} item={item} onOpenResult={onOpenResult} />
+              {results.items.map((item) => (
+                <ResultItem
+                  key={item.id}
+                  item={item}
+                  onOpenResult={onOpenResult}
+                  onDelete={confirmResultDelete}
+                />
               ))}
             </div>
           ) : null}
+          {!results.loading && !results.error ? (
+            <Pagination
+              page={results.page}
+              totalPages={results.totalPages}
+              onPageChange={results.setPage}
+            />
+          ) : null}
         </section>
+
+        {viewerRole === 'admin' ? (
+          <UserManagementPanel accessToken={accessToken} currentUserId={currentUserId} />
+        ) : null}
       </section>
     </main>
   );

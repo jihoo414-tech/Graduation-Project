@@ -2,6 +2,7 @@ import { useAnalysisResults } from '../hooks/useAnalysisResults';
 import { SummaryTile } from '../components/SummaryTile';
 import { ResultItem } from '../components/ResultItem';
 import type { ResultEnvelope } from '../model/result';
+import { Pagination } from '../../../shared/ui/Pagination';
 
 type AnalysisListPageProps = {
   accessToken: string;
@@ -17,7 +18,10 @@ export function AnalysisListPage({
   onStartAnalysis,
   canStartAnalysis = true,
 }: AnalysisListPageProps) {
-  const { items, viewerRole, query, setQuery, loading, error, loadResults, filteredItems, highRiskCount, lowRiskCount } = useAnalysisResults(accessToken);
+  const {
+    viewerRole, query, setQuery, loading, error, loadResults, filteredItems,
+    highRiskCount, lowRiskCount, page, setPage, total, totalPages,
+  } = useAnalysisResults(accessToken);
   return (
     <main className="product-shell authenticated-content">
       <section className="workspace-page-shell">
@@ -44,7 +48,7 @@ export function AnalysisListPage({
         </header>
 
         <section className="dashboard-summary-strip" aria-label="저장된 분석 결과 요약">
-          <SummaryTile label="전체" value={items.length} description="저장된 분석 결과" />
+          <SummaryTile label="전체" value={total} description="저장된 분석 결과" />
           <SummaryTile label="High risk" value={highRiskCount} description="고위험 분류" />
           <SummaryTile label="Low risk" value={lowRiskCount} description="저위험 분류" />
         </section>
@@ -80,11 +84,11 @@ export function AnalysisListPage({
           {!loading && !error && filteredItems.length === 0 ? (
             <div className="workspace-inline-output">
               <p>
-                {items.length === 0
+                {total === 0
                   ? '아직 등록된 분석 결과가 없습니다. 담당 의료진이 분석 결과를 등록하면 이곳에서 확인할 수 있습니다.'
                   : '검색 조건에 맞는 결과가 없습니다.'}
               </p>
-              {items.length === 0 && canStartAnalysis ? (
+              {total === 0 && canStartAnalysis ? (
                 <button className="primary-button dashboard-new-case-button" type="button" onClick={onStartAnalysis}>
                   첫 분석 시작
                 </button>
@@ -98,6 +102,9 @@ export function AnalysisListPage({
                 <ResultItem key={item.id} item={item} onOpenResult={onOpenResult} />
               ))}
             </div>
+          ) : null}
+          {!loading && !error ? (
+            <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
           ) : null}
         </section>
       </section>

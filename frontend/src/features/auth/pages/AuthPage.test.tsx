@@ -4,9 +4,9 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, expect, it, vi } from 'vitest';
 import { AuthPage } from './AuthPage';
 
-const { signIn } = vi.hoisted(() => ({ signIn: vi.fn() }));
+const { signIn, signUp } = vi.hoisted(() => ({ signIn: vi.fn(), signUp: vi.fn() }));
 vi.mock('../api/supabase', () => ({
-  supabase: { auth: { signInWithPassword: signIn } },
+  supabase: { auth: { signInWithPassword: signIn, signUp } },
 }));
 afterEach(() => { cleanup(); vi.resetAllMocks(); });
 
@@ -43,4 +43,21 @@ it('allows retry after a network exception without exposing its message', async 
   expect(await screen.findByText('인증 서비스에 연결하지 못했습니다. 인터넷 연결을 확인하고 잠시 후 다시 시도해 주세요.')).toBeInTheDocument();
   expect(screen.queryByText('Failed to fetch')).not.toBeInTheDocument();
   expect(screen.getByRole('button', { name: '로그인' })).toBeEnabled();
+});
+
+it('stores the patient name in signup metadata', async () => {
+  signUp.mockResolvedValue({ error: null, data: { session: null } });
+  const user = userEvent.setup();
+  render(<AuthPage />);
+  await user.click(screen.getByRole('button', { name: '새 계정 만들기' }));
+  await user.type(screen.getByLabelText('이름'), '홍길동');
+  await user.type(screen.getByLabelText('이메일'), 'patient@example.com');
+  await user.type(screen.getByLabelText('비밀번호'), 'test-password');
+  await user.click(screen.getByRole('button', { name: '계정 생성' }));
+
+  expect(signUp).toHaveBeenCalledWith({
+    email: 'patient@example.com',
+    password: 'test-password',
+    options: { data: { full_name: '홍길동' } },
+  });
 });

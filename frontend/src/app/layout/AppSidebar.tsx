@@ -1,6 +1,7 @@
 type AppSidebarProps = {
   active: 'dashboard' | 'analysis';
   userEmail?: string;
+  userName?: string | null;
   roleLabel?: string;
   showAnalysis?: boolean;
   onStartAnalysis: () => void;
@@ -11,6 +12,7 @@ type AppSidebarProps = {
 export function AppSidebar({
   active,
   userEmail,
+  userName,
   roleLabel,
   showAnalysis = true,
   onStartAnalysis,
@@ -57,6 +59,7 @@ export function AppSidebar({
 
       <footer className="app-sidebar-footer">
         {roleLabel ? <span className="sidebar-role-label">{roleLabel}</span> : null}
+        {userName ? <strong className="sidebar-user-name">{userName}</strong> : null}
         {userEmail && <p className="muted-text sidebar-email">{userEmail}</p>}
         <button className="secondary-button" type="button" onClick={onSignOut}>
           로그아웃

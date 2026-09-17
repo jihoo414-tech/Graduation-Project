@@ -13,6 +13,7 @@ const mocks = vi.hoisted(() => ({
   fetchAnalysisResults: vi.fn(),
   fetchCurrentUser: vi.fn(),
   fetchPatients: vi.fn(),
+  fetchAdminUsers: vi.fn(),
   unsubscribe: vi.fn(),
 }));
 
@@ -29,7 +30,11 @@ vi.mock('../features/auth/api/supabase', () => ({
 vi.mock('../features/analysis/api/inference', () => ({ uploadModelFiles: mocks.uploadModelFiles }));
 vi.mock('../features/analysis/api/results', () => ({ fetchAnalysisResults: mocks.fetchAnalysisResults }));
 vi.mock('../features/auth/api/currentUser', () => ({ fetchCurrentUser: mocks.fetchCurrentUser }));
-vi.mock('../features/analysis/api/patients', () => ({ fetchPatients: mocks.fetchPatients }));
+vi.mock('../features/patients/api/patients', () => ({ fetchPatients: mocks.fetchPatients }));
+vi.mock('../features/admin/api/users', () => ({
+  fetchAdminUsers: mocks.fetchAdminUsers,
+  updateAdminUserRole: vi.fn(),
+}));
 
 const result: ResultEnvelope = {
   result_version: 'v2',
@@ -54,31 +59,40 @@ beforeEach(() => {
   });
   mocks.signOut.mockResolvedValue({ error: null });
   mocks.fetchCurrentUser.mockResolvedValue({
-    id: 'user-1', email: 'test@example.com', role: 'patient',
+    id: 'user-1', email: 'test@example.com', fullName: '테스트 환자', role: 'patient',
   });
   mocks.fetchAnalysisResults.mockResolvedValue({
     viewerRole: 'patient',
     items: [{
-      id: 'row-1', createdAt: '2026-09-13T00:00:00Z', patientId: 'P-001',
+      id: 'row-1', createdAt: '2026-09-13T00:00:00Z', patientId: null,
+      patientName: null,
       riskGroup: 'Low', riskScore: 0.1, age: 50, gender: 'female', stage: '1',
       variantCount: 0, resultPayload: result,
     }],
+    page: 1,
+    pageSize: 5,
+    total: 1,
+    totalPages: 1,
+    highRiskTotal: 0,
+    lowRiskTotal: 1,
   });
   mocks.fetchPatients.mockResolvedValue({
     items: [{
       id: '11111111-1111-1111-1111-111111111111',
+      fullName: '테스트 환자',
       createdAt: '2026-09-01T00:00:00Z',
       lastAnalysisAt: null,
       latestRiskGroup: null,
       resultCount: 0,
     }],
   });
+  mocks.fetchAdminUsers.mockResolvedValue({ items: [] });
 });
 
 afterEach(cleanup);
 
 async function fillAnalysis(user: ReturnType<typeof userEvent.setup>) {
-  await screen.findByRole('heading', { name: '관리자 대시보드' });
+  await screen.findByRole('heading', { name: /대시보드/ });
   await user.click(within(screen.getByRole('main')).getByRole('button', { name: '새 분석' }));
   await user.click(await screen.findByRole('radio'));
   await user.click(screen.getByRole('button', { name: '다음 단계' }));
@@ -98,7 +112,7 @@ async function fillAnalysis(user: ReturnType<typeof userEvent.setup>) {
 describe('analysis navigation', () => {
   it('validates input, submits files, shows progress and resets a completed analysis', async () => {
     mocks.fetchCurrentUser.mockResolvedValue({
-      id: 'doctor-1', email: 'doctor@example.com', role: 'doctor',
+      id: 'doctor-1', email: 'doctor@example.com', fullName: '테스트 의사', role: 'doctor',
     });
     let complete!: (value: ResultEnvelope) => void;
     mocks.uploadModelFiles.mockReturnValue(new Promise<ResultEnvelope>((resolve) => { complete = resolve; }));
@@ -129,7 +143,7 @@ describe('analysis navigation', () => {
 
   it('returns to the upload step with the message and selected files on failure', async () => {
     mocks.fetchCurrentUser.mockResolvedValue({
-      id: 'doctor-1', email: 'doctor@example.com', role: 'doctor',
+      id: 'doctor-1', email: 'doctor@example.com', fullName: '테스트 의사', role: 'doctor',
     });
     mocks.uploadModelFiles.mockRejectedValue(new ApiError(502, '분석 결과를 저장하지 못했습니다.'));
     const user = userEvent.setup();
@@ -147,10 +161,13 @@ describe('analysis navigation', () => {
     render(<App />);
     await screen.findByRole('heading', { name: '대시보드' });
     expect(screen.queryByRole('button', { name: '새 분석' })).not.toBeInTheDocument();
-    await user.click(within(screen.getByRole('navigation')).getByRole('button', { name: '대시보드' }));
+    await user.click(
+      within(screen.getByRole('navigation', { name: '주요 메뉴' }))
+        .getByRole('button', { name: '대시보드' }),
+    );
     expect(await screen.findByRole('heading', { name: '내 분석 결과' })).toBeInTheDocument();
-    expect(mocks.fetchAnalysisResults).toHaveBeenCalledWith('test-token');
-    await user.click(screen.getByRole('button', { name: /P-001/ }));
+    expect(mocks.fetchAnalysisResults).toHaveBeenCalledWith('test-token', 1);
+    await user.click(screen.getByRole('button', { name: /내 분석 결과/ }));
     expect(screen.getByRole('heading', { name: '분석 결과' })).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: '대시보드로' }));
     await screen.findByRole('heading', { name: '내 분석 결과' });
@@ -161,9 +178,12 @@ describe('analysis navigation', () => {
 
   it('shows only the result dashboard to an administrator', async () => {
     mocks.fetchCurrentUser.mockResolvedValue({
-      id: 'admin-1', email: 'admin@example.com', role: 'admin',
+      id: 'admin-1', email: 'admin@example.com', fullName: '테스트 관리자', role: 'admin',
     });
-    mocks.fetchAnalysisResults.mockResolvedValue({ viewerRole: 'admin', items: [] });
+    mocks.fetchAnalysisResults.mockResolvedValue({
+      viewerRole: 'admin', items: [], page: 1, pageSize: 5, total: 0, totalPages: 1,
+      highRiskTotal: 0, lowRiskTotal: 0,
+    });
     render(<App />);
 
     expect(await screen.findByRole('heading', { name: '관리자 대시보드' })).toBeInTheDocument();

@@ -5,8 +5,8 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException
 
+from app.common.error_response import ErrorMessageResponse
 from app.common.exceptions import AppError
-from app.dto.response.error import ErrorMessageResponse
 
 logger = logging.getLogger(__name__)
 INPUT_LABELS = {

@@ -33,6 +33,7 @@ export function ResultPage({ result, onBackToCases, backButtonLabel = '새 분�
   const coxScore = artifacts.model_scores?.cox?.z_score ?? artifacts.model_scores?.cox?.raw;
   const meterPosition = riskMeterPosition(ensembleScore, artifacts.risk_threshold);
   const patientId = result.patient.deidentified_patient_id ?? '내 분석 결과';
+  const patientName = result.patient.display_name;
   const variantCount = result.normalized_input.gene_variants?.length;
   const hasClinicalDetails = patientId !== '내 분석 결과';
   const hasModelDetails = Boolean(artifacts.model_scores || typeof artifacts.risk_threshold === 'number');
@@ -55,8 +56,8 @@ export function ResultPage({ result, onBackToCases, backButtonLabel = '새 분�
         <section className="result-hero-grid dashboard-card-grid" aria-label="분석 결과 요약">
           {hasClinicalDetails ? (
             <article className="result-hero-card">
-              <span>환자 ID</span>
-              <strong className="accent-text">{patientId}</strong>
+              <span>환자</span>
+              <strong className="accent-text">{patientName ?? '이름 미등록'}</strong>
             </article>
           ) : null}
           <article className={`result-hero-card risk-${artifacts.risk_group?.toLowerCase() ?? 'unknown'}`}>

@@ -1,4 +1,4 @@
-import { usePatients } from '../hooks/usePatients';
+import { usePatients } from '../../patients/hooks/usePatients';
 
 type PatientSelectionStepProps = {
   accessToken: string;
@@ -34,7 +34,7 @@ export function PatientSelectionStep({
           <span>환자 검색</span>
           <input
             className="search-input"
-            placeholder="환자 ID 검색"
+            placeholder="환자 이름 검색"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
           />
@@ -64,17 +64,13 @@ export function PatientSelectionStep({
                 checked={selectedPatientId === patient.id}
                 onChange={() => onSelect(patient.id)}
               />
-              <code title={patient.id}>{patient.id}</code>
+              <div className="patient-identity">
+                <strong>{patient.fullName ?? '이름 미등록'}</strong>
+              </div>
               <span>최근 분석 {formatDate(patient.lastAnalysisAt)}</span>
               <span>{patient.resultCount}건</span>
             </label>
           ))}
-        </div>
-      ) : null}
-      {selectedPatientId ? (
-        <div className="selected-patient-summary">
-          <span>선택한 환자</span>
-          <code>{selectedPatientId}</code>
         </div>
       ) : null}
       <div className="button-row analysis-actions">
