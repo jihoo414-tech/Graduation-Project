@@ -28,4 +28,26 @@ export default tseslint.config(
       'no-undef': 'off',
     },
   },
+  {
+    files: ['src/shared/**/*.{ts,tsx}'],
+    rules: {
+      'no-restricted-imports': ['error', {
+        patterns: [{
+          group: ['**/app/**', '**/features/**'],
+          message: 'Shared code must not depend on app or feature modules.',
+        }],
+      }],
+    },
+  },
+  {
+    files: ['src/features/**/*.{ts,tsx}'],
+    rules: {
+      'no-restricted-imports': ['error', {
+        patterns: [{
+          group: ['**/app/**'],
+          message: 'Features must receive app-level state through props or hook arguments.',
+        }],
+      }],
+    },
+  },
 );
