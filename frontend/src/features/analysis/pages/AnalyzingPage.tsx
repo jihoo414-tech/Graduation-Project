@@ -1,4 +1,16 @@
+import { useEffect, useState } from 'react';
+
 export function AnalyzingPage() {
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
+
+  useEffect(() => {
+    const startedAt = performance.now();
+    const timer = window.setInterval(() => {
+      setElapsedSeconds(Math.floor((performance.now() - startedAt) / 1000));
+    }, 1000);
+    return () => window.clearInterval(timer);
+  }, []);
+
   return (
     <main className="product-shell">
       <section className="workspace-page-shell">
@@ -14,6 +26,9 @@ export function AnalyzingPage() {
           <div className="analysis-spinner" aria-hidden="true" />
           <strong>모델 예측 수행 중</strong>
           <p>입력 데이터를 정리하고 세 가지 생존분석 모델의 결과를 결합하고 있습니다.</p>
+          <p aria-live="off" style={{ fontVariantNumeric: 'tabular-nums' }}>
+            경과 시간 {Math.floor(elapsedSeconds / 60)}분 {String(elapsedSeconds % 60).padStart(2, '0')}초
+          </p>
           <div className="analysis-progress" role="progressbar" aria-label="분석 진행 중" aria-valuetext="완료 시 자동으로 결과를 표시합니다.">
             <span />
           </div>

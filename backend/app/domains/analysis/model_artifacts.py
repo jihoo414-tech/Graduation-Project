@@ -53,7 +53,7 @@ def artifact_paths_from_env() -> ModelArtifactPaths:
 
     artifact_dir = Path(configured_dir).expanduser()
     if not artifact_dir.is_absolute():
-        backend_dir = Path(__file__).resolve().parents[2]
+        backend_dir = Path(__file__).resolve().parents[3]
         artifact_dir = backend_dir / artifact_dir
 
     return ModelArtifactPaths.from_directory(artifact_dir)
