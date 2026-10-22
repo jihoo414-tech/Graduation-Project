@@ -1,16 +1,11 @@
 import { useAuthForm } from '../hooks/useAuthForm';
-import type { AuthPortal } from '../../../shared/types/auth';
 
 type AuthPageProps = {
-  portal?: AuthPortal;
   initialMessage?: string;
-  onBack?: () => void;
 };
 
 export function AuthPage({
-  portal = 'patient',
   initialMessage = '',
-  onBack,
 }: AuthPageProps) {
   const {
     mode,
@@ -24,8 +19,7 @@ export function AuthPage({
     submitting,
     submit,
     switchMode,
-  } = useAuthForm(portal, initialMessage);
-  const portalLabel = portal === 'staff' ? '관리자' : '환자';
+  } = useAuthForm(initialMessage);
   return (
     <main className="app-shell auth-shell">
       <section className="workspace-page-shell auth-panel">
@@ -33,12 +27,8 @@ export function AuthPage({
           <p className="workspace-page-kicker">LUAD AI</p>
         </header>
         <div className="auth-heading">
-          <h1>{portalLabel} {mode === 'login' ? '로그인' : '계정 생성'}</h1>
-          <p>
-            {portal === 'staff'
-              ? '사전에 승인된 의료진 또는 관리자 계정으로 로그인해 주세요.'
-              : '분석 결과를 안전하게 저장하려면 환자 계정으로 로그인해 주세요.'}
-          </p>
+          <h1>{mode === 'login' ? '로그인' : '환자 계정 생성'}</h1>
+          <p>로그인하면 계정 유형을 확인해 환자 또는 의료진·관리자 화면으로 안내합니다.</p>
         </div>
 
         <form className="auth-form" onSubmit={submit}>
@@ -88,18 +78,12 @@ export function AuthPage({
           </button>
         </form>
 
-        {portal === 'patient' ? (
-          <button className="secondary-button auth-switch" type="button" onClick={switchMode}>
-            {mode === 'login' ? '새 계정 만들기' : '로그인으로 돌아가기'}
-          </button>
-        ) : (
-          <p className="auth-helper-text">관리자 계정은 서비스 관리자가 사전에 등록합니다.</p>
-        )}
-        {onBack ? (
-          <button className="auth-back-button" type="button" onClick={onBack}>
-            ← 사용자 유형 다시 선택
-          </button>
-        ) : null}
+        <button className="secondary-button auth-switch" type="button" onClick={switchMode}>
+          {mode === 'login' ? '새 계정 만들기' : '로그인으로 돌아가기'}
+        </button>
+        <p className="auth-helper-text">
+          환자 계정은 여기서 만들 수 있습니다. 의료진·관리자 계정은 사전 등록된 계정으로 로그인해 주세요.
+        </p>
       </section>
     </main>
   );

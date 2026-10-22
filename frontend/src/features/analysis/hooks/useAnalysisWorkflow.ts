@@ -1,4 +1,5 @@
-import { useState, type FormEvent } from 'react';
+import { useRef, useState, type FormEvent } from 'react';
+import { useBrowserHistoryState } from '../../../shared/hooks/useBrowserHistoryState';
 import { normalizeUnknownError } from '../../../shared/api/errors';
 import { uploadModelFiles } from '../api/inference';
 import { emptyClinicalDraft, isValidClinicalDraft, toBirthDate, type ClinicalDraft } from '../model/clinicalInput';
@@ -7,49 +8,70 @@ import type { ResultEnvelope } from '../model/result';
 type Phase = 'dashboard' | 'input' | 'analyzing' | 'result';
 type ResultBackTarget = 'analysis' | 'dashboard';
 type AppErrorMessage = ReturnType<typeof normalizeUnknownError>;
+type NavigationState = {
+  draftId: string;
+  phase: Phase;
+  inputStep: 1 | 2 | 3;
+  result: ResultEnvelope | null;
+  resultBackTarget: ResultBackTarget;
+};
+const initialNavigation: NavigationState = {
+  draftId: '', phase: 'dashboard', inputStep: 1, result: null, resultBackTarget: 'dashboard',
+};
+type AnalysisDraft = {
+  mutationFile: File | null;
+  expressionFile: File | null;
+  selectedPatientId: string;
+  clinicalDraft: ClinicalDraft;
+};
+const emptyDraft: AnalysisDraft = {
+  mutationFile: null, expressionFile: null, selectedPatientId: '', clinicalDraft: emptyClinicalDraft,
+};
 
 export function useAnalysisWorkflow(accessToken: string | undefined) {
-  const [phase, setPhase] = useState<Phase>('dashboard');
-  const [mutationFile, setMutationFile] = useState<File | null>(null);
-  const [expressionFile, setExpressionFile] = useState<File | null>(null);
-  const [inputStep, setInputStep] = useState<1 | 2 | 3>(1);
-  const [selectedPatientId, setSelectedPatientId] = useState('');
-  const [clinicalDraft, setClinicalDraft] = useState<ClinicalDraft>(emptyClinicalDraft);
-  const [result, setResult] = useState<ResultEnvelope | null>(null);
-  const [resultBackTarget, setResultBackTarget] = useState<ResultBackTarget>('analysis');
+  const { value: navigation, navigate, replaceEntry, hasEntry } = useBrowserHistoryState(initialNavigation, !!accessToken);
+  const { phase, inputStep, result, resultBackTarget } = navigation;
+  const pending = useRef('');
+  const go = (patch: Partial<NavigationState>) => {
+    const next = { ...navigation, ...patch };
+    if (next.phase === phase && next.inputStep === inputStep && next.result === result
+      && next.resultBackTarget === resultBackTarget && next.draftId === navigation.draftId) return '';
+    return navigate(next);
+  };
+  const [drafts, setDrafts] = useState<Record<string, AnalysisDraft>>({});
+  const { mutationFile, expressionFile, selectedPatientId, clinicalDraft } = drafts[navigation.draftId] ?? emptyDraft;
+  const updateDraft = (patch: Partial<AnalysisDraft>) => {
+    setDrafts((previous) => ({
+      ...previous,
+      [navigation.draftId]: { ...(previous[navigation.draftId] ?? emptyDraft), ...patch },
+    }));
+  };
   const [error, setError] = useState<AppErrorMessage | null>(null);
 
   const resetAnalysis = () => {
-    setPhase('input');
-    setMutationFile(null);
-    setExpressionFile(null);
-    setInputStep(1);
-    setSelectedPatientId('');
-    setClinicalDraft(emptyClinicalDraft);
-    setResult(null);
-    setResultBackTarget('analysis');
+    setDrafts({});
     setError(null);
   };
 
   const showDashboard = () => {
-    setPhase('dashboard');
+    go({ phase: 'dashboard', result: null, resultBackTarget: 'dashboard' });
     setError(null);
   };
 
   const openSavedResult = (savedResult: ResultEnvelope) => {
-    setResult(savedResult);
-    setResultBackTarget('dashboard');
     setError(null);
-    setPhase('result');
+    go({ phase: 'result', result: savedResult, resultBackTarget: 'dashboard' });
   };
 
   const updateClinicalDraft = (patch: Partial<ClinicalDraft>) => {
-    setClinicalDraft((draft) => ({ ...draft, ...patch }));
+    updateDraft({ clinicalDraft: { ...clinicalDraft, ...patch } });
   };
 
   const startAnalysis = (patientId = '') => {
-    resetAnalysis();
-    setSelectedPatientId(patientId);
+    const draftId = crypto.randomUUID();
+    setDrafts((previous) => ({ ...previous, [draftId]: { ...emptyDraft, selectedPatientId: patientId } }));
+    setError(null);
+    go({ draftId, phase: 'input', inputStep: 1, result: null, resultBackTarget: 'analysis' });
   };
 
   const continueToClinical = () => {
@@ -58,7 +80,7 @@ export function useAnalysisWorkflow(accessToken: string | undefined) {
       return;
     }
     setError(null);
-    setInputStep(2);
+    go({ inputStep: 2 });
   };
 
   const continueToFiles = () => {
@@ -68,11 +90,15 @@ export function useAnalysisWorkflow(accessToken: string | undefined) {
     }
 
     setError(null);
-    setInputStep(3);
+    go({ inputStep: 3 });
   };
 
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (pending.current && hasEntry(pending.current)) {
+      setError({ message: '분석이 이미 진행 중입니다. 완료될 때까지 기다려 주세요.' });
+      return;
+    }
     if (!accessToken) {
       setError({ message: '분석 결과 저장을 위해 먼저 로그인해 주세요.' });
       return;
@@ -83,13 +109,20 @@ export function useAnalysisWorkflow(accessToken: string | undefined) {
     }
     if (!selectedPatientId) {
       setError({ message: '분석 결과를 등록할 환자를 선택해 주세요.' });
-      setInputStep(1);
+      go({ inputStep: 1 });
+      return;
+    }
+    // Browser forward navigation must not bypass validation after editing an earlier step.
+    if (!isValidClinicalDraft(clinicalDraft)) {
+      setError({ message: '입력값을 다시 확인해 주세요.' });
+      go({ inputStep: 2 });
       return;
     }
 
+    setError(null);
+    const entryId = go({ phase: 'analyzing' });
+    pending.current = entryId;
     try {
-      setError(null);
-      setPhase('analyzing');
       const response = await uploadModelFiles(
         mutationFile,
         expressionFile,
@@ -101,12 +134,14 @@ export function useAnalysisWorkflow(accessToken: string | undefined) {
         },
         accessToken,
       );
-      setResult(response);
-      setResultBackTarget('analysis');
-      setPhase('result');
+      // Resolve the pending entry even if the user has navigated away from it.
+      replaceEntry(entryId, { ...navigation, phase: 'result', result: response, resultBackTarget: 'analysis' });
     } catch (unknownError) {
-      setError(normalizeUnknownError(unknownError));
-      setPhase('input');
+      if (replaceEntry(entryId, { ...navigation, phase: 'input' })) {
+        setError(normalizeUnknownError(unknownError));
+      }
+    } finally {
+      if (pending.current === entryId) pending.current = '';
     }
   };
 
@@ -116,13 +151,13 @@ export function useAnalysisWorkflow(accessToken: string | undefined) {
     inputProps: {
       accessToken: accessToken ?? '',
       mutationFile, expressionFile, inputStep, clinicalDraft, error, selectedPatientId,
-      onPatientSelect: setSelectedPatientId,
+      onPatientSelect: (selectedPatientId: string) => updateDraft({ selectedPatientId }),
       onPatientContinue: continueToClinical,
-      onMutationFileChange: setMutationFile,
-      onExpressionFileChange: setExpressionFile,
+      onMutationFileChange: (mutationFile: File | null) => updateDraft({ mutationFile }),
+      onExpressionFileChange: (expressionFile: File | null) => updateDraft({ expressionFile }),
       onClinicalChange: updateClinicalDraft,
       onContinue: continueToFiles,
-      onBack: () => setInputStep((step) => (step === 3 ? 2 : 1)),
+      onBack: () => go({ inputStep: inputStep === 3 ? 2 : 1 }),
       onSubmit: submit,
       onDismissError: () => setError(null),
     },

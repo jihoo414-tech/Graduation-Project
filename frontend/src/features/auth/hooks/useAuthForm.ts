@@ -1,12 +1,12 @@
 import { useEffect, useState, type FormEvent } from 'react';
-import type { AuthPortal } from '../../../shared/types/auth';
 import { supabase } from '../api/supabase';
 import { authErrorMessage } from '../api/authErrors';
+import { useBrowserHistoryState } from '../../../shared/hooks/useBrowserHistoryState';
 
 type Mode = 'login' | 'signup';
 
-export function useAuthForm(portal: AuthPortal = 'patient', initialMessage = '') {
-  const [mode, setMode] = useState<Mode>('login');
+export function useAuthForm(initialMessage = '') {
+  const { value: mode, navigate: setMode } = useBrowserHistoryState<Mode>('login');
   const [email, setEmail] = useState('');
   const [fullName, setFullName] = useState('');
   const [password, setPassword] = useState('');
@@ -25,14 +25,13 @@ export function useAuthForm(portal: AuthPortal = 'patient', initialMessage = '')
     setMessage('');
 
     try {
-      const response =
-        mode === 'login' || portal === 'staff'
-          ? await supabase.auth.signInWithPassword({ email, password })
-          : await supabase.auth.signUp({
-              email,
-              password,
-              options: { data: { full_name: fullName.trim() } },
-            });
+      const response = mode === 'login'
+        ? await supabase.auth.signInWithPassword({ email, password })
+        : await supabase.auth.signUp({
+            email,
+            password,
+            options: { data: { full_name: fullName.trim() } },
+          });
 
       if (response.error) {
         setMessage(authErrorMessage(response.error, mode));
@@ -54,13 +53,12 @@ export function useAuthForm(portal: AuthPortal = 'patient', initialMessage = '')
 
 
   const switchMode = () => {
-    if (portal === 'staff') return;
     setMode(mode === 'login' ? 'signup' : 'login');
     setMessage('');
   };
 
   return {
-    mode: portal === 'staff' ? 'login' : mode,
+    mode,
     email,
     setEmail,
     fullName,

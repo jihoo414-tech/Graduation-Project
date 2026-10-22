@@ -45,7 +45,14 @@ export function ResultItem({ item, onOpenResult, onDelete }: ResultItemProps) {
         <span className={`status-badge status-${item.riskGroup?.toLowerCase() ?? 'unknown'}`}>
           {formatRiskGroup(item.riskGroup)}
         </span>
-        <span className="case-list-action-label">결과 보기</span>
+        <button
+          className="case-list-action-label"
+          type="button"
+          onClick={() => item.resultPayload && onOpenResult(item.resultPayload)}
+          disabled={!item.resultPayload}
+        >
+          결과 보기
+        </button>
         {onDelete ? (
           <button className="danger-text-button" type="button" onClick={() => onDelete(item.id)}>
             삭제

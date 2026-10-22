@@ -91,6 +91,16 @@ beforeEach(() => {
 
 afterEach(cleanup);
 
+async function traverseHistory(direction: 'back' | 'forward') {
+  await act(async () => {
+    const navigated = new Promise<void>((resolve) => {
+      window.addEventListener('popstate', () => resolve(), { once: true });
+    });
+    window.history[direction]();
+    await navigated;
+  });
+}
+
 async function fillAnalysis(user: ReturnType<typeof userEvent.setup>) {
   await screen.findByRole('heading', { name: /대시보드/ });
   await user.click(within(screen.getByRole('main')).getByRole('button', { name: '새 분석' }));
@@ -110,6 +120,76 @@ async function fillAnalysis(user: ReturnType<typeof userEvent.setup>) {
 }
 
 describe('analysis navigation', () => {
+  it('restores the saved result with browser back and forward and prevents restoration after logout', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+    await screen.findByRole('heading', { name: '내 분석 결과' });
+    await user.click(await screen.findByRole('button', { name: '결과 보기' }));
+    expect(screen.getByRole('heading', { name: '분석 결과' })).toBeInTheDocument();
+    await traverseHistory('back');
+    await screen.findByRole('heading', { name: '내 분석 결과' });
+    await traverseHistory('forward');
+    expect(screen.getByRole('heading', { name: '분석 결과' })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: '대시보드로' }));
+    await user.click(screen.getByRole('button', { name: '로그아웃' }));
+    await screen.findByRole('heading', { name: '로그인' });
+    await traverseHistory('back');
+    expect(screen.getByRole('heading', { name: '로그인' })).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: '분석 결과' })).not.toBeInTheDocument();
+  });
+
+  it('keeps clinical values and uploaded files across browser navigation and separate drafts', async () => {
+    mocks.fetchCurrentUser.mockResolvedValue({ id: 'doctor-1', role: 'doctor' });
+    const user = userEvent.setup();
+    render(<App />);
+    await fillAnalysis(user);
+    await traverseHistory('back');
+    expect(screen.getByLabelText('출생 연도')).toHaveValue('1990');
+    await traverseHistory('back');
+    expect(await screen.findByRole('radio')).toBeChecked();
+    await traverseHistory('forward');
+    expect(screen.getByLabelText('성별')).toHaveValue('female');
+    await traverseHistory('forward');
+    expect(screen.getByText('mutation.csv')).toBeInTheDocument();
+    await user.click(within(screen.getByRole('navigation', { name: '주요 메뉴' })).getByRole('button', { name: '새 분석' }));
+    expect(await screen.findByRole('radio')).not.toBeChecked();
+    await traverseHistory('back');
+    expect(screen.getByText('mutation.csv')).toBeInTheDocument();
+  });
+
+  it('finishes a pending analysis without pulling the user away from the previous step', async () => {
+    mocks.fetchCurrentUser.mockResolvedValue({ id: 'doctor-1', role: 'doctor' });
+    let complete!: (value: ResultEnvelope) => void;
+    mocks.uploadModelFiles.mockReturnValue(new Promise<ResultEnvelope>((resolve) => { complete = resolve; }));
+    const user = userEvent.setup();
+    render(<App />);
+    await fillAnalysis(user);
+    await user.click(screen.getByRole('button', { name: '분석 실행' }));
+    await traverseHistory('back');
+    expect(screen.getByText('mutation.csv')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: '분석 실행' }));
+    expect(mocks.uploadModelFiles).toHaveBeenCalledOnce();
+    await user.click(screen.getByRole('button', { name: '닫기' }));
+    await act(async () => { complete(result); });
+    expect(screen.queryByRole('heading', { name: '분석 결과' })).not.toBeInTheDocument();
+    await traverseHistory('forward');
+    expect(screen.getByRole('heading', { name: '분석 결과' })).toBeInTheDocument();
+  });
+
+  it('revalidates clinical values after browser forward returns to the upload step', async () => {
+    mocks.fetchCurrentUser.mockResolvedValue({ id: 'doctor-1', role: 'doctor' });
+    const user = userEvent.setup();
+    render(<App />);
+    await fillAnalysis(user);
+    await traverseHistory('back');
+    await user.selectOptions(screen.getByLabelText('성별'), '');
+    await traverseHistory('forward');
+    await user.click(screen.getByRole('button', { name: '분석 실행' }));
+    expect(screen.getByText('입력값을 다시 확인해 주세요.')).toBeInTheDocument();
+    expect(screen.getByLabelText('성별')).toHaveValue('');
+    expect(mocks.uploadModelFiles).not.toHaveBeenCalled();
+  });
+
   it('validates input, submits files, shows progress and resets a completed analysis', async () => {
     mocks.fetchCurrentUser.mockResolvedValue({
       id: 'doctor-1', email: 'doctor@example.com', fullName: '테스트 의사', role: 'doctor',
@@ -172,7 +252,7 @@ describe('analysis navigation', () => {
     await user.click(screen.getByRole('button', { name: '대시보드로' }));
     await screen.findByRole('heading', { name: '내 분석 결과' });
     await user.click(screen.getByRole('button', { name: '로그아웃' }));
-    expect(await screen.findByRole('heading', { name: '사용자 유형 선택' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: '로그인' })).toBeInTheDocument();
     expect(mocks.signOut).toHaveBeenCalledOnce();
   });
 

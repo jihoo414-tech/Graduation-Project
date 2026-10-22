@@ -669,9 +669,16 @@ h3 {
 }
 
 .case-list-action-label {
+  padding: 0;
+  background: transparent;
   color: var(--primary);
   font-size: 0.77rem;
   font-weight: 700;
+}
+
+.case-list-action-label:hover:not(:disabled) {
+  color: var(--primary-hover);
+  text-decoration: underline;
 }
 
 .danger-text-button {

@@ -1,9 +1,7 @@
-import { useState } from 'react';
 import { AuthenticatedLayout } from './layout/AuthenticatedLayout';
 import { AuthPage } from '../features/auth/pages/AuthPage';
 import { AuthLoadingPage } from '../features/auth/components/AuthLoadingPage';
 import { AuthSetupPage } from '../features/auth/components/AuthSetupPage';
-import { RoleSelectionPage } from '../features/auth/pages/RoleSelectionPage';
 import { useAuthSession } from '../features/auth/hooks/useAuthSession';
 import { isSupabaseConfigured } from '../features/auth/api/supabase';
 import { useAnalysisWorkflow } from '../features/analysis/hooks/useAnalysisWorkflow';
@@ -12,13 +10,10 @@ import { AnalysisListPage } from '../features/analysis/pages/AnalysisListPage';
 import { AnalyzingPage } from '../features/analysis/pages/AnalyzingPage';
 import { ResultPage } from '../features/analysis/pages/ResultPage';
 import { StaffDashboardPage } from '../features/analysis/pages/StaffDashboardPage';
-import type { AuthPortal } from '../shared/types/auth';
 import { isStaffRole } from '../shared/types/auth';
 
 export default function App() {
-  const [selectedPortal, setSelectedPortal] = useState<AuthPortal | null>(null);
-  const { session, currentUser, authLoading, authError, signOut, clearAuthError } =
-    useAuthSession(selectedPortal);
+  const { session, currentUser, authLoading, authError, signOut } = useAuthSession();
   const workflow = useAnalysisWorkflow(session?.access_token);
   const {
     phase,
@@ -33,30 +28,12 @@ export default function App() {
   const handleSignOut = async () => {
     await signOut();
     resetAnalysis();
-    setSelectedPortal(null);
-  };
-
-  const selectPortal = (portal: AuthPortal) => {
-    clearAuthError();
-    setSelectedPortal(portal);
-  };
-
-  const resetPortal = () => {
-    clearAuthError();
-    setSelectedPortal(null);
   };
 
   if (!isSupabaseConfigured) return <AuthSetupPage />;
   if (authLoading) return <AuthLoadingPage />;
   if (!session || !currentUser) {
-    if (!selectedPortal) return <RoleSelectionPage onSelect={selectPortal} />;
-    return (
-      <AuthPage
-        portal={selectedPortal}
-        initialMessage={authError}
-        onBack={resetPortal}
-      />
-    );
+    return <AuthPage initialMessage={authError} />;
   }
   if (phase === 'analyzing') return <AnalyzingPage />;
 

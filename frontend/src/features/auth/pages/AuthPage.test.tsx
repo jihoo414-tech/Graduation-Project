@@ -1,5 +1,5 @@
 import '@testing-library/jest-dom/vitest';
-import { cleanup, render, screen } from '@testing-library/react';
+import { act, cleanup, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, expect, it, vi } from 'vitest';
 import { AuthPage } from './AuthPage';
@@ -9,6 +9,26 @@ vi.mock('../api/supabase', () => ({
   supabase: { auth: { signInWithPassword: signIn, signUp } },
 }));
 afterEach(() => { cleanup(); vi.resetAllMocks(); });
+
+it('uses browser history for signup and login without losing the entered email', async () => {
+  const user = userEvent.setup();
+  render(<AuthPage />);
+  await user.type(screen.getByLabelText('이메일'), 'patient@example.com');
+  await user.click(screen.getByRole('button', { name: '새 계정 만들기' }));
+  expect(screen.getByRole('heading', { name: '환자 계정 생성' })).toBeInTheDocument();
+  for (const direction of ['back', 'forward'] as const) {
+    await act(async () => {
+      const navigated = new Promise<void>((resolve) => {
+        window.addEventListener('popstate', () => resolve(), { once: true });
+      });
+      window.history[direction]();
+      await navigated;
+    });
+    expect(screen.getByRole('heading', { name: direction === 'back' ? '로그인' : '환자 계정 생성' })).toBeInTheDocument();
+    expect(screen.getByLabelText('이메일')).toHaveValue('patient@example.com');
+  }
+  expect(JSON.stringify(window.history.state)).not.toContain('patient@example.com');
+});
 
 it.each([
   [{ code: 'invalid_credentials', message: 'Invalid login credentials' },
