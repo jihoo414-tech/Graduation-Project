@@ -68,7 +68,7 @@ def require_artifacts(
         raise AppError(
             status_code=500,
             code="MODEL_ARTIFACTS_MISSING",
-            message="서버에 분석에 필요한 모델 파일이 없습니다. 관리자에게 문의해 주세요.",
+            message="서버에 분석용 모델 파일이 없습니다. 관리자에게 문의해 주세요.",
             details=[error_detail(filename, "missing") for filename in missing],
         )
 

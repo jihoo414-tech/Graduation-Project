@@ -32,9 +32,9 @@ it('uses browser history for signup and login without losing the entered email',
 
 it.each([
   [{ code: 'invalid_credentials', message: 'Invalid login credentials' },
-    '이메일 또는 비밀번호가 일치하지않습니다. 다시 확인해 주세요.'],
+    '이메일 또는 비밀번호가 일치하지 않습니다. 다시 확인해 주세요.'],
   [{ message: 'Invalid login credentials' },
-    '이메일 또는 비밀번호가 일치하지않습니다. 다시 확인해 주세요.'],
+    '이메일 또는 비밀번호가 일치하지 않습니다. 다시 확인해 주세요.'],
   [{ code: 'email_not_confirmed', message: 'Email not confirmed' },
     '이메일 인증이 완료되지 않았습니다. 인증 메일을 확인해 주세요.'],
   [{ code: 'over_request_rate_limit', message: 'Rate limit exceeded' },

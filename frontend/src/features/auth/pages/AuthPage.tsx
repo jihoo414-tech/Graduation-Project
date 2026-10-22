@@ -82,7 +82,7 @@ export function AuthPage({
           {mode === 'login' ? '새 계정 만들기' : '로그인으로 돌아가기'}
         </button>
         <p className="auth-helper-text">
-          환자 계정은 여기서 만들 수 있습니다. 의료진·관리자 계정은 사전 등록된 계정으로 로그인해 주세요.
+          환자 계정은 여기서 만들 수 있습니다. 의료진·관리자는 사전에 등록된 계정으로 로그인해 주세요.
         </p>
       </section>
     </main>

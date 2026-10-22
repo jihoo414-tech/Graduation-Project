@@ -18,7 +18,7 @@ export function UserManagementPanel({
 }: UserManagementPanelProps) {
   const users = useAdminUsers(accessToken, true);
   const changeRole = (userId: string, name: string | null, role: UserRole) => {
-    if (window.confirm(`${name ?? '이름 미등록'} 계정의 역할을 ${roleLabel[role]}(으)로 변경하시겠습니까?`)) {
+    if (window.confirm(`${name ?? '이름 미등록'} 계정의 역할을 ${roleLabel[role]}로 변경하시겠습니까?`)) {
       void users.updateRole(userId, role);
     }
   };

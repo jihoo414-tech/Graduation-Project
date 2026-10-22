@@ -51,7 +51,7 @@ def build_model_patient(
         raise AppError(
             status_code=422,
             code="INVALID_CLINICAL_VALUE",
-            message="병기 값이 올바르지 않습니다. 1기부터 4기 중 하나를 선택해 주세요.",
+            message="병기 값이 올바르지 않습니다. 1~4기 중 하나를 선택해 주세요.",
             details=[error_detail("stage", "integer_1_to_4")],
         )
     if not isinstance(age, int) or isinstance(age, bool) or not 0 <= age <= 130:
